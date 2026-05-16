@@ -9,6 +9,7 @@ npm-debug.log*
 .gradle/
 build/
 out/
+.intellijPlatform/
 
 # IDE
 .idea/
