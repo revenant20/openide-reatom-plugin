@@ -1,0 +1,10 @@
+{
+  "name": "openide-reatom-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Поддержка Reatom v1001 в OpenIDE и других редакторах",
+  "license": "MIT",
+  "workspaces": [
+    "packages/ts-plugin"
+  ]
+}

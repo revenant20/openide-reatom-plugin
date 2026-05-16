@@ -1,0 +1,24 @@
+{
+  "name": "@openide/reatom-ts-plugin",
+  "version": "0.0.0",
+  "description": "TypeScript Language Service plugin для Reatom v1001 — кросс-редакторная семантика поверх tsserver",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.9"
+  },
+  "devDependencies": {
+    "@types/node": "^25.8.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.6"
+  }
+}
