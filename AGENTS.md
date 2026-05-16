@@ -77,7 +77,7 @@ openide-reatom-plugin/
 └── templates/                # live templates: reatom.xml, reatom.code-snippets
 ```
 
-> На текущем этапе репозиторий содержит только документацию. Каталоги `packages/` и `templates/` появятся по мере старта разработки.
+> Статус: реализованы `packages/ts-plugin` (фичи 2 и 6) и `packages/ide-plugin` (фича 9). Каталог `templates/` появится позже.
 
 ## Правила работы
 
