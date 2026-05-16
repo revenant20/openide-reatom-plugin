@@ -1,0 +1,22 @@
+# Node / TypeScript
+node_modules/
+dist/
+*.tsbuildinfo
+.npm/
+npm-debug.log*
+
+# Gradle / IntelliJ plugin
+.gradle/
+build/
+out/
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
