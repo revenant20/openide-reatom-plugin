@@ -1,0 +1,5 @@
+{
+  "// зачем": "Reatom-подсказки едут на инфраструктуре штатных TS inlay hints — без хотя бы одной включённой настройки редактор не вызывает provideInlayHints. enumMemberValues открывает гейт, но своих хинтов не добавляет (в playground нет enum'ов) — наши подсказки видны без шума.",
+  "editor.inlayHints.enabled": "on",
+  "typescript.inlayHints.enumMemberValues.enabled": true
+}
