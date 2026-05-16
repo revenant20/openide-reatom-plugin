@@ -17,6 +17,10 @@ object ReatomGraphModel {
     fun nodesInFile(graph: ReatomGraph, filePath: String): List<ReatomGraphNode> =
         graph.nodes.filter { it.file == filePath }
 
+    /** Использования юнита — рёбра, ведущие в него (читатели и писатели). */
+    fun usagesOf(graph: ReatomGraph, nodeId: String): List<ReatomGraphEdge> =
+        graph.edges.filter { it.to == nodeId }
+
     /** Сводка по каждому узлу: число читателей и писателей из рёбер графа. */
     fun summarize(graph: ReatomGraph): Map<String, ReatomNodeSummary> {
         val readers = HashMap<String, Int>()

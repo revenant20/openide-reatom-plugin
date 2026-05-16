@@ -10,6 +10,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.TextRange
 import ru.openide.reatom.analyzer.ReatomGraphService
 import ru.openide.reatom.model.ReatomGraphModel
+import ru.openide.reatom.navigation.ReatomNavigation
 
 /**
  * Нативный Code Lens платформы IntelliJ: кликабельная строка-сводка над
@@ -46,6 +47,17 @@ class ReatomCodeVisionProvider : CodeVisionProvider<Unit> {
             result += TextRange(start, end) to TextCodeVisionEntry(text, id)
         }
         return result
+    }
+
+    /** Клик по Code Lens — переход к использованиям юнита этой строки. */
+    override fun handleClick(editor: Editor, textRange: TextRange, entry: CodeVisionEntry) {
+        val project = editor.project ?: return
+        val filePath = FileDocumentManager.getInstance().getFile(editor.document)?.path ?: return
+        val graph = ReatomGraphService.getInstance(project).graph ?: return
+        val node = graph.nodes.find {
+            it.file == filePath && it.range.start == textRange.startOffset
+        } ?: return
+        ReatomNavigation.showUsages(project, editor, node.id)
     }
 
     companion object {

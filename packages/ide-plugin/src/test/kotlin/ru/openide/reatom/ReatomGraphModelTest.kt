@@ -64,4 +64,17 @@ class ReatomGraphModelTest {
         assertEquals(1, inA.size)
         assertEquals("x", inA.first().name)
     }
+
+    @Test
+    fun usagesOfReturnsIncomingEdges() {
+        val graph = ReatomGraph(
+            nodes = listOf(node("a.ts:counter", "atom", "a.ts")),
+            edges = listOf(
+                ReatomGraphEdge(to = "a.ts:counter", kind = "read", file = "b.ts"),
+                ReatomGraphEdge(to = "a.ts:counter", kind = "write", file = "b.ts"),
+                ReatomGraphEdge(to = "a.ts:other", kind = "read", file = "b.ts"),
+            ),
+        )
+        assertEquals(2, ReatomGraphModel.usagesOf(graph, "a.ts:counter").size)
+    }
 }

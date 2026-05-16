@@ -1,6 +1,9 @@
 package ru.openide.reatom.gutter
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.editor.markup.HighlighterLayer
@@ -11,6 +14,7 @@ import com.intellij.openapi.util.Key
 import ru.openide.reatom.analyzer.ReatomGraphService
 import ru.openide.reatom.model.ReatomGraphModel
 import ru.openide.reatom.model.ReatomNodeSummary
+import ru.openide.reatom.navigation.ReatomNavigation
 import javax.swing.Icon
 
 /**
@@ -75,6 +79,18 @@ private class ReatomGutterIconRenderer(
         return "Reatom ${node.kind} «${node.name}» · " +
             "↑${summary.readers} читателей · ↓${summary.writers} писателей" + extensions
     }
+
+    /** По клику — попап с использованиями юнита и переход к выбранному. */
+    override fun isNavigateAction(): Boolean = true
+
+    override fun getClickAction(): AnAction =
+        object : AnAction() {
+            override fun actionPerformed(e: AnActionEvent) {
+                val project = e.project ?: return
+                val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+                ReatomNavigation.showUsages(project, editor, summary.node.id)
+            }
+        }
 
     override fun equals(other: Any?): Boolean =
         other is ReatomGutterIconRenderer && other.summary == summary
