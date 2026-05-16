@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Запуск песочницы IDE с плагином reatom-ide-plugin.
 #
-# Песочницу поднимает соседний проект openide-mcp: его build.gradle.kts
-# подключает наш плагин (localPlugin reatomJar) вместе с MCP Steroid и MCP
-# Server — так в песочнице доступно AI-управление. По умолчанию открывает
-# reatom-playground — там видно Code Lens и gutter-иконки фичи 9.
+# Песочницу поднимает сам этот плагин (его runIde). В сборку песочницы
+# через localPlugin подключён MCP Steroid (см. build.gradle.kts) — IDE
+# управляема AI-агентом. По умолчанию открывает reatom-playground —
+# там видно Code Lens и gutter-иконки фичи 9.
 #
 #   ./scripts/start-sandbox.sh [путь-к-проекту]
 set -euo pipefail
@@ -13,14 +13,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_DIR="$(cd "$PLUGIN_DIR/../.." && pwd)"
 IDE_PROJECTS_DIR="$(cd "$REPO_DIR/.." && pwd)"
-
-# openide-mcp — host-проект, поднимающий песочницу с MCP Steroid.
-MCP_DIR="${OPENIDE_MCP_DIR:-$IDE_PROJECTS_DIR/openide-mcp}"
-if [[ ! -d "$MCP_DIR" ]]; then
-    echo "ОШИБКА: openide-mcp не найден: $MCP_DIR"
-    echo "Укажи путь через переменную OPENIDE_MCP_DIR."
-    exit 1
-fi
 
 # Проект, который откроется в песочнице.
 OPEN_PROJECT="${1:-$IDE_PROJECTS_DIR/reatom-playground}"
@@ -55,17 +47,11 @@ if [[ ! -d "$JAVA_HOME" ]]; then
 fi
 
 mkdir -p "$PLUGIN_DIR/build"
-
-# --- собрать ZIP плагина: openide-mcp подключает его как localPlugin ---
-echo "Сборка reatom-ide-plugin (buildPlugin)..."
-"$PLUGIN_DIR/gradlew" -p "$PLUGIN_DIR" buildPlugin --console=plain -q
-
 echo "JAVA_HOME:           $JAVA_HOME"
-echo "openide-mcp:         $MCP_DIR"
 echo "Проект в песочнице:  $OPEN_PROJECT"
-echo "Запуск песочницы (openide-mcp runIde) в фоне..."
+echo "Запуск runIde в фоне (в песочнице — reatom-ide-plugin + MCP Steroid)..."
 
-nohup "$MCP_DIR/gradlew" -p "$MCP_DIR" runIde \
+nohup "$PLUGIN_DIR/gradlew" -p "$PLUGIN_DIR" runIde \
     --args="$OPEN_PROJECT" --console=plain > "$LOG_FILE" 2>&1 &
 GRADLE_PID=$!
 echo "$GRADLE_PID" > "$PID_FILE"
@@ -82,5 +68,4 @@ if ! kill -0 "$GRADLE_PID" 2>/dev/null; then
 fi
 
 echo "Песочница стартует — окно IDE появится через ~30-60с."
-echo "В песочнице: reatom-ide-plugin + MCP Steroid (AI-управление)."
 echo "Остановить: ./scripts/stop-sandbox.sh"

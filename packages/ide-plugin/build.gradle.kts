@@ -20,6 +20,24 @@ dependencies {
         // Артефакт idea:idea — тот же, что у соседнего php-plugin.
         intellijIdea("2025.3")
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
+
+        // Платформенный MCP Server — инфраструктура MCP в IDE.
+        bundledPlugin("com.intellij.mcpServer")
+
+        // MCP Steroid — ставится в песочницу как localPlugin из локальной
+        // сборки mcp-steroid (тем же механизмом, что в openide-mcp). Даёт
+        // AI-агенту полный контроль IDE. Путь переопределяется -PmcpSteroidJar=...
+        // Подключается, только если ZIP собран — иначе buildPlugin/test
+        // работают без него.
+        val mcpSteroidZip = providers.gradleProperty("mcpSteroidJar").orNull?.let(::file)
+            ?: fileTree("${rootProject.projectDir}/../../../mcp-steroid/ij-plugin/build/distributions") {
+                include("mcp-steroid-*.zip")
+            }.files.firstOrNull()
+        if (mcpSteroidZip?.isFile == true) {
+            localPlugin(mcpSteroidZip.absolutePath)
+        } else {
+            logger.lifecycle("[reatom-ide-plugin] MCP Steroid ZIP не найден — песочница без MCP Steroid.")
+        }
     }
     testImplementation("junit:junit:4.13.2")
 }
@@ -42,6 +60,13 @@ tasks {
     buildSearchableOptions {
         enabled = false
     }
+}
+
+// Песочница авто-открывает переданный проект — доверяем ему без диалога.
+tasks.named<org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask>("runIde") {
+    jvmArgumentProviders.add(CommandLineArgumentProvider {
+        listOf("-Didea.trust.all.projects=true")
+    })
 }
 
 kotlin {

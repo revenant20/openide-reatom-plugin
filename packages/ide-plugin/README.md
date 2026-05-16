@@ -47,11 +47,13 @@ export JAVA_HOME=/Users/sazonovfm/Library/Java/JavaVirtualMachines/liberica-21.0
 плагином (по умолчанию открывает `../../../reatom-playground`),
 `./scripts/stop-sandbox.sh` — останавливает.
 
-Песочницу запускает соседний проект `openide-mcp`: его `build.gradle.kts`
-подключает наш плагин как `localPlugin` (`reatomJar`) — тем же механизмом,
-которым там подключены MCP Steroid (`mcpSteroidJar`) и `php-plugin`
-(`openphpJar`). Поэтому в песочнице вместе с reatom-ide-plugin доступны
-MCP Steroid и MCP Server — IDE можно управлять AI-агентом.
+В сборку песочницы через `localPlugin` подключён **MCP Steroid** — берётся
+из локальной сборки `../../../mcp-steroid/ij-plugin/build/distributions/`
+(путь переопределяется `-PmcpSteroidJar=...`). Так в песочнице, помимо
+reatom-ide-plugin, доступно AI-управление IDE. Если ZIP MCP Steroid не
+собран — песочница поднимается без него, `buildPlugin`/`test` не страдают.
+Механизм взят из `openide-mcp` как образец; зависимости от самого
+`openide-mcp` нет.
 
 ## Зависимость от анализатора
 
