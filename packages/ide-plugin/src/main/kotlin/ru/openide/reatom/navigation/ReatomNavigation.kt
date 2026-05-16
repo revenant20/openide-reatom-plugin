@@ -22,16 +22,27 @@ import javax.swing.JList
 
 /**
  * Навигация по реактивным связям юнита — общая для Code Lens и gutter-иконок.
- * Показывает использования юнита (читателей и писателей) и переходит к
- * выбранному: одно использование — сразу, несколько — через попап-список.
+ * Показывает использования юнита и переходит к выбранному: одно — сразу,
+ * несколько — через попап-список.
  */
 object ReatomNavigation {
 
-    /**
-     * Запись попапа — все использования на одной строке файла: расположение,
-     * код строки, набор видов связи (несколько `read`/`write` на строке —
-     * одна запись).
-     */
+    /** Какие использования показывать: все, только чтения или только записи. */
+    enum class UsageFilter(val noun: String) {
+        ALL("usages"),
+        READ("readers"),
+        WRITE("writers"),
+        ;
+
+        fun matches(edgeKind: String): Boolean =
+            when (this) {
+                ALL -> true
+                READ -> edgeKind == "read"
+                WRITE -> edgeKind == "write"
+            }
+    }
+
+    /** Запись попапа — все использования на одной строке файла. */
     private class Usage(
         val file: String,
         val offset: Int,
@@ -72,15 +83,20 @@ object ReatomNavigation {
         }
     }
 
-    /** Показывает использования юнита `nodeId` и переходит к выбранному. */
-    fun showUsages(project: Project, editor: Editor, nodeId: String) {
+    /**
+     * Показывает использования юнита `nodeId` с учётом `filter` и переходит к
+     * выбранному. `ALL` — все связи (клик по Code Lens), `READ`/`WRITE` —
+     * только чтения / записи (клик по соответствующей gutter-иконке).
+     */
+    fun showUsages(project: Project, editor: Editor, nodeId: String, filter: UsageFilter) {
         val graph = ReatomGraphService.getInstance(project).graph
         val node = graph?.nodes?.find { it.id == nodeId }
         val name = node?.name ?: nodeId
-        val edges = if (graph != null) ReatomGraphModel.usagesOf(graph, nodeId) else emptyList()
+        val edges = (if (graph != null) ReatomGraphModel.usagesOf(graph, nodeId) else emptyList())
+            .filter { filter.matches(it.kind) }
 
         if (edges.isEmpty()) {
-            HintManager.getInstance().showInformationHint(editor, "'$name' has no usages")
+            HintManager.getInstance().showInformationHint(editor, "'$name' has no ${filter.noun}")
             return
         }
         val usages = groupByLine(edges)
@@ -88,9 +104,10 @@ object ReatomNavigation {
             navigate(project, usages.first())
             return
         }
+        val title = filter.noun.replaceFirstChar { it.uppercase() } + " of '$name'"
         val popup = JBPopupFactory.getInstance()
             .createPopupChooserBuilder(usages)
-            .setTitle("Usages of '$name'")
+            .setTitle(title)
             .setRenderer(UsageRenderer())
             .setItemChosenCallback { navigate(project, it) }
             .createPopup()
@@ -113,8 +130,7 @@ object ReatomNavigation {
 
     /**
      * Группирует рёбра по строке файла: несколько использований на одной
-     * строке (например `read` и `write` в `counter.set(counter() + 1)`) дают
-     * одну запись попапа.
+     * строке дают одну запись попапа.
      */
     private fun groupByLine(edges: List<ReatomGraphEdge>): List<Usage> {
         val groups = LinkedHashMap<Pair<String, Int>, MutableList<ReatomGraphEdge>>()

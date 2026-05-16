@@ -52,7 +52,7 @@ class ReatomCodeVisionTest : BasePlatformTestCase() {
         assertTrue("в подписи есть расширение: $lens", lens.contains("withCache"))
     }
 
-    fun testGutterIconAddedForAtom() {
+    fun testGutterIconsForReadAndWrite() {
         val text = "const counter = 0"
         myFixture.configureByText("model.ts", text)
         val path = myFixture.file.virtualFile.path
@@ -61,9 +61,11 @@ class ReatomCodeVisionTest : BasePlatformTestCase() {
             .setGraphForTesting(graphForCounter(path, start, start + "counter".length))
 
         ReatomGutterRenderer.refresh(myFixture.editor)
-        val withGutter = myFixture.editor.markupModel.allHighlighters
-            .count { it.gutterIconRenderer != null }
-        assertEquals(1, withGutter)
+        val icons = myFixture.editor.markupModel.allHighlighters
+            .mapNotNull { it.gutterIconRenderer?.icon }
+        // у counter есть и чтение, и запись — две разные gutter-иконки
+        assertEquals(2, icons.size)
+        assertEquals(2, icons.toSet().size)
     }
 
     fun testNoEntriesWhenGraphAbsent() {

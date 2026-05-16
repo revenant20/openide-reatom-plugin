@@ -57,7 +57,7 @@ class ReatomCodeVisionProvider : CodeVisionProvider<Unit> {
         val node = graph.nodes.find {
             it.file == filePath && it.range.start == textRange.startOffset
         } ?: return
-        ReatomNavigation.showUsages(project, editor, node.id)
+        ReatomNavigation.showUsages(project, editor, node.id, ReatomNavigation.UsageFilter.ALL)
     }
 
     companion object {

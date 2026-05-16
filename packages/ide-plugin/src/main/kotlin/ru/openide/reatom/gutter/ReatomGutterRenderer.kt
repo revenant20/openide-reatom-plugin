@@ -13,14 +13,16 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.Key
 import ru.openide.reatom.analyzer.ReatomGraphService
 import ru.openide.reatom.model.ReatomGraphModel
-import ru.openide.reatom.model.ReatomNodeSummary
+import ru.openide.reatom.model.ReatomGraphNode
 import ru.openide.reatom.navigation.ReatomNavigation
+import ru.openide.reatom.navigation.ReatomNavigation.UsageFilter
 import javax.swing.Icon
 
 /**
- * Ставит нативные gutter-иконки на объявления Reatom-юнитов. Иконки вешаются
- * на markup-модель редактора по offset'ам из графа — `LineMarkerProvider` не
- * годится, он PSI-зависим, а TS-PSI в OpenIDE нет.
+ * Ставит нативные gutter-иконки на объявления Reatom-юнитов: отдельная иконка
+ * для чтений и отдельная для записей. Клик по иконке чтения открывает только
+ * чтения, по иконке записи — только записи. Иконки вешаются на markup-модель
+ * редактора по offset'ам — `LineMarkerProvider` PSI-зависим, а TS-PSI нет.
  */
 object ReatomGutterRenderer {
 
@@ -42,17 +44,37 @@ object ReatomGutterRenderer {
             val end = node.range.end
             if (start < 0 || end > documentLength || start >= end) continue
             val summary = summaries[node.id] ?: continue
-            val highlighter = editor.markupModel.addRangeHighlighter(
-                start,
-                end,
-                HighlighterLayer.ADDITIONAL_SYNTAX,
-                null,
-                HighlighterTargetArea.EXACT_RANGE,
-            )
-            highlighter.gutterIconRenderer = ReatomGutterIconRenderer(summary)
-            added += highlighter
+            if (summary.readers > 0) {
+                added += addIcon(
+                    editor, start, end,
+                    ReatomGutterIconRenderer(node, UsageFilter.READ, summary.readers),
+                )
+            }
+            if (summary.writers > 0) {
+                added += addIcon(
+                    editor, start, end,
+                    ReatomGutterIconRenderer(node, UsageFilter.WRITE, summary.writers),
+                )
+            }
         }
         editor.putUserData(HIGHLIGHTERS_KEY, added)
+    }
+
+    private fun addIcon(
+        editor: Editor,
+        start: Int,
+        end: Int,
+        renderer: GutterIconRenderer,
+    ): RangeHighlighter {
+        val highlighter = editor.markupModel.addRangeHighlighter(
+            start,
+            end,
+            HighlighterLayer.ADDITIONAL_SYNTAX,
+            null,
+            HighlighterTargetArea.EXACT_RANGE,
+        )
+        highlighter.gutterIconRenderer = renderer
+        return highlighter
     }
 
     private fun clear(editor: Editor) {
@@ -64,23 +86,25 @@ object ReatomGutterRenderer {
     }
 }
 
-/** Gutter-иконка с тултипом-сводкой реактивных связей юнита. */
+/**
+ * Gutter-иконка одного вида связи (чтения или записи). По клику открывает
+ * попап с использованиями только этого вида.
+ */
 private class ReatomGutterIconRenderer(
-    private val summary: ReatomNodeSummary,
+    private val node: ReatomGraphNode,
+    private val filter: UsageFilter,
+    private val count: Int,
 ) : GutterIconRenderer() {
 
-    override fun getIcon(): Icon = AllIcons.Gutter.ReadAccess
+    override fun getIcon(): Icon =
+        if (filter == UsageFilter.WRITE) AllIcons.Gutter.WriteAccess
+        else AllIcons.Gutter.ReadAccess
 
     override fun getTooltipText(): String {
-        val node = summary.node
-        val extensions =
-            if (node.extensions.isEmpty()) ""
-            else " · extensions: " + node.extensions.joinToString(", ")
-        return "Reatom ${node.kind} '${node.name}' · " +
-            "↑${summary.readers} readers · ↓${summary.writers} writers" + extensions
+        val arrow = if (filter == UsageFilter.WRITE) "↓" else "↑"
+        return "Reatom ${node.kind} '${node.name}' · $arrow$count ${filter.noun}"
     }
 
-    /** По клику — попап с использованиями юнита и переход к выбранному. */
     override fun isNavigateAction(): Boolean = true
 
     override fun getClickAction(): AnAction =
@@ -88,12 +112,14 @@ private class ReatomGutterIconRenderer(
             override fun actionPerformed(e: AnActionEvent) {
                 val project = e.project ?: return
                 val editor = e.getData(CommonDataKeys.EDITOR) ?: return
-                ReatomNavigation.showUsages(project, editor, summary.node.id)
+                ReatomNavigation.showUsages(project, editor, node.id, filter)
             }
         }
 
     override fun equals(other: Any?): Boolean =
-        other is ReatomGutterIconRenderer && other.summary == summary
+        other is ReatomGutterIconRenderer &&
+            other.node.id == node.id &&
+            other.filter == filter
 
-    override fun hashCode(): Int = summary.hashCode()
+    override fun hashCode(): Int = 31 * node.id.hashCode() + filter.hashCode()
 }
