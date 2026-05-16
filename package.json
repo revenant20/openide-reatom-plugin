@@ -5,7 +5,6 @@
   "description": "Поддержка Reatom v1001 в OpenIDE и других редакторах",
   "license": "MIT",
   "workspaces": [
-    "packages/ts-plugin",
-    "examples/playground"
+    "packages/ts-plugin"
   ]
 }

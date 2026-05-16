@@ -37,12 +37,21 @@ export JAVA_HOME=/Users/sazonovfm/Library/Java/JavaVirtualMachines/liberica-21.0
 
 # прогнать тесты (модель + рендеринг Code Lens / gutter на BasePlatformTestCase)
 ./gradlew test
-
-# поднять песочницу IDE с установленным плагином
-./gradlew runIde
 ```
 
-Платформа IntelliJ Community 2025.3 (build 253) скачивается Gradle автоматически.
+Платформа IntelliJ IDEA 2025.3 (build 253) скачивается Gradle автоматически.
+
+## Песочница
+
+`./scripts/start-sandbox.sh [путь-к-проекту]` поднимает песочницу IDE с
+плагином (по умолчанию открывает `../../../reatom-playground`),
+`./scripts/stop-sandbox.sh` — останавливает.
+
+Песочницу запускает соседний проект `openide-mcp`: его `build.gradle.kts`
+подключает наш плагин как `localPlugin` (`reatomJar`) — тем же механизмом,
+которым там подключены MCP Steroid (`mcpSteroidJar`) и `php-plugin`
+(`openphpJar`). Поэтому в песочнице вместе с reatom-ide-plugin доступны
+MCP Steroid и MCP Server — IDE можно управлять AI-агентом.
 
 ## Зависимость от анализатора
 
