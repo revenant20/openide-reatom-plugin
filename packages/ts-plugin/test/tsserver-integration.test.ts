@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { spawn, execSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import * as fs from 'node:fs';
@@ -149,9 +149,7 @@ let fixtureDir: string;
 let server: TsServer;
 
 beforeAll(() => {
-  // Плагин грузится из dist/ — собрать перед запуском tsserver.
-  execSync('npm run build', { cwd: packageRoot, stdio: 'pipe' });
-
+  // Плагин уже собран в dist/ глобальным setup'ом vitest.
   fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'reatom-tsserver-'));
   const write = (relative: string, content: string): void => {
     const full = path.join(fixtureDir, relative);
