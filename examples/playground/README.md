@@ -17,8 +17,7 @@ workspace-зависимость; `build` соберёт `dist/`, который
 
 ## Что должно быть видно
 
-Открой `src/model.ts` в редакторе с включёнными inlay hints — у объявлений
-появятся серые подписи:
+Открой `src/model.ts` — у объявлений появятся серые подписи:
 
 ```
 export const counter ⟦: atom · ↑4 · ↓2⟧ = atom(0, 'counter')
@@ -31,26 +30,39 @@ export const counterLogger ⟦: effect · ↑0 · ↓0⟧ = effect(() => { … }
 
 ### VS Code
 
-1. Открой каталог `examples/playground` (или весь монорепозиторий).
-2. Команда **TypeScript: Select TypeScript Version → Use Workspace Version**
-   (плагины из `tsconfig.json` грузит именно tsserver проекта).
-3. Включи хотя бы одну штатную TS-настройку inlay hints, иначе хинты
-   не запрашиваются вообще — например в `settings.json`:
-   ```json
-   { "typescript.inlayHints.variableTypes.enabled": true }
-   ```
+1. Открой каталог `examples/playground`.
+2. **Переключись на рабочую версию TypeScript** (обязательно — см. ниже):
+   открой `src/model.ts`, кликни версию TS в статус-баре справа внизу →
+   **Select TypeScript Version… → Use Workspace Version**.
+3. `Cmd+Shift+P → Developer: Reload Window`, подожди старт tsserver.
+
+Гейт inlay hints и `typescript.tsdk` уже прописаны в `.vscode/settings.json` —
+отдельно их настраивать не нужно.
 
 ### IntelliJ IDEA / WebStorm / OpenIDE
 
 1. **Settings → Languages & Frameworks → TypeScript** — плагины из
    `tsconfig.json` подхватываются автоматически.
-2. **Settings → Editor → Inlay Hints → TypeScript** — включи любую секцию
-   (например, Variable types).
+2. **Settings → Editor → Inlay Hints → TypeScript** — включи любую секцию.
 
-## Почему нужна включённая TS-настройка inlay hints
+## Почему нужна рабочая версия TypeScript (VS Code)
 
-`typescript-language-server` (и встроенная TS-поддержка редакторов) не
-вызывает `provideInlayHints`, если выключены **все** штатные TS inlay hints
-(гейт `areInlayHintsEnabledForFile`). Наши Reatom-подсказки «едут» на той же
-инфраструктуре — поэтому нужна хотя бы одна включённая настройка. Подробнее —
-[docs/feature-2-inlay-hints.md](../../docs/feature-2-inlay-hints.md).
+tsserver ищет плагины из `tsconfig.json` в `node_modules` **рядом со своей
+установкой**, а не в каталоге проекта. Встроенный в VS Code TypeScript лежит
+внутри `VS Code.app`, поэтому плагин из `node_modules` монорепозитория он не
+находит. `typescript.tsdk` в `.vscode/settings.json` указывает на TypeScript
+из репозитория — тогда tsserver ищет плагины в `<repo>/node_modules`, где
+плагин и слинкован. Но переключиться на эту версию VS Code требует один раз
+вручную (шаг 2) — из соображений безопасности.
+
+Это ровно та причина, по которой штатная дистрибуция плагина — bundle в
+IDE-плагин через `globalPlugins`, а не подключение через `tsconfig`
+(см. [docs/features-reatom-plugin.md](../../docs/features-reatom-plugin.md)).
+
+## Почему нужен включённый inlay hints
+
+Редактор не вызывает `provideInlayHints`, если выключены **все** штатные TS
+inlay hints. Reatom-подсказки едут на той же инфраструктуре. В
+`.vscode/settings.json` для этого включён `typescript.inlayHints.enumMemberValues`
+— он открывает гейт и не добавляет своих подсказок (в playground нет enum'ов).
+Подробнее — [docs/feature-2-inlay-hints.md](../../docs/feature-2-inlay-hints.md).
