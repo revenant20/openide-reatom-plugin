@@ -8,7 +8,7 @@ import * as ts from 'typescript';
  * резолвить `atom`/`computed`/… в файл под `@reatom/`, иначе детекция роли
  * (она идёт по символу, не по имени) их не примет.
  */
-const REATOM_CORE_DTS = `
+export const REATOM_CORE_DTS = `
 export interface Atom<T> {
   (): T;
   set(value: T | ((prev: T) => T)): T;
