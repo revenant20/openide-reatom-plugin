@@ -28,10 +28,13 @@ npm-пакет `@openide/reatom-ts-plugin` — плагин для `typescript-l
 - code actions (quick-fixes / intentions);
 - completion, включая сниппеты в snippet-формате (аналог live templates);
 - hover / quick documentation;
-- расширенные references для Find Usages (чтение / запись / реактивная зависимость / extend);
-- code lens и inlay hints.
+- inlay hints — роль сущности (`[atom]`/`[computed]`/…) и навигируемая сводка реактивных связей.
 
 Всё это отдаётся клиенту по стандартному LSP-протоколу. Работает **кросс-редакторно**: OpenIDE, VS Code, WebStorm, Neovim, Helix, Zed — везде, где есть tsserver.
+
+Code lens через TS plugin **недоступен** (нет метода в `ts.LanguageService`), категоризированный Find Usages — тоже (LSP `references` плоский). См. [docs/feature-2-code-lens.md](docs/feature-2-code-lens.md) и деление фич на класс A/B в концепции.
+
+Дополнительно ts-plugin содержит **анализатор реактивного графа** — переиспользуемое ядро (вне tsserver), на котором стоят CLI-визуализация и toolwindow IDE-плагина.
 
 Стек: TypeScript, TypeScript Compiler API.
 
