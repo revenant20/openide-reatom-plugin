@@ -75,9 +75,9 @@ private class ReatomGutterIconRenderer(
         val node = summary.node
         val extensions =
             if (node.extensions.isEmpty()) ""
-            else " · расширения: " + node.extensions.joinToString(", ")
-        return "Reatom ${node.kind} «${node.name}» · " +
-            "↑${summary.readers} читателей · ↓${summary.writers} писателей" + extensions
+            else " · extensions: " + node.extensions.joinToString(", ")
+        return "Reatom ${node.kind} '${node.name}' · " +
+            "↑${summary.readers} readers · ↓${summary.writers} writers" + extensions
     }
 
     /** По клику — попап с использованиями юнита и переход к выбранному. */

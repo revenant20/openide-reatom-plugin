@@ -4,10 +4,10 @@
     <vendor url="https://openide.ru">OpenIDE</vendor>
 
     <description><![CDATA[
-        Нативная поддержка реактивного менеджера состояний Reatom v1001.
-        Code Lens и gutter-иконки со сводкой реактивных связей атомов —
-        строятся по статическому графу, который собирает анализатор
-        @openide/reatom-ts-plugin.
+        Native support for the Reatom v1001 reactive state manager.
+        Code Lens and gutter icons summarising atoms' reactive links —
+        built from the static reactive graph produced by the
+        @openide/reatom-ts-plugin analyzer.
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
