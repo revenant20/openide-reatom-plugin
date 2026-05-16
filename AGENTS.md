@@ -47,7 +47,7 @@ Code lens через TS plugin **недоступен** (нет метода в 
 - bundled **live templates** для JetBrains-формата;
 - страница настроек поддержки Reatom.
 
-Кроме того, IDE-плагин **бандлит TS plugin внутри себя** и регистрирует его в tsserver OpenIDE через механизм `globalPlugins` / `pluginProbeLocations` — чтобы пользователю не нужно было ставить npm-пакет и править `tsconfig.json`. Точный способ интеграции с frontend-плагином OpenIDE — открытый вопрос (см. раздел в концепции).
+Кроме того, IDE-плагин **бандлит TS plugin внутри себя** и регистрирует его через `initializationOptions.plugins` при инициализации `typescript-language-server` (тот сам транслирует это в `globalPlugins` / `pluginProbeLocations` tsserver) — чтобы пользователю не нужно было ставить npm-пакет и править `tsconfig.json`. Точный способ интеграции с frontend-плагином OpenIDE — открытый вопрос (см. раздел в концепции).
 
 Стек: Kotlin, Gradle, IntelliJ Platform SDK, Gradle IntelliJ Plugin.
 
