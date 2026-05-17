@@ -24,3 +24,7 @@
 - **`packages/ide-plugin`** — фича 9 (нативный Code Lens и gutter-иконки).
 
 Остальные фичи — в [концепции](docs/features-reatom-plugin.md).
+
+## Лицензия
+
+[Apache License 2.0](LICENSE). © 2026 Fedor Sazonov.

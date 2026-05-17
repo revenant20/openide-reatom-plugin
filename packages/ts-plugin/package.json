@@ -2,7 +2,8 @@
   "name": "@openide/reatom-ts-plugin",
   "version": "0.0.0",
   "description": "Анализатор реактивного графа Reatom v1001 — строит JSON-модель связей для reatom-ide-plugin",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "author": "Fedor Sazonov <sazonovfm@gmail.com>",
   "files": [
     "dist"
   ],
