@@ -1,6 +1,6 @@
 {
   "name": "openide-reatom-plugin",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Reatom v1001 support for OpenIDE and other editors",
   "license": "Apache-2.0",
