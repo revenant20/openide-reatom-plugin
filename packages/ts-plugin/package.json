@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json && npm run build:analyzer",
-    "build:analyzer": "esbuild src/analyzer/cli.ts --bundle --platform=node --target=node18 --minify --legal-comments=none --outfile=dist/analyzer/reatom-analyzer.cjs",
+    "build:analyzer": "esbuild src/analyzer/cli.ts --bundle --platform=node --target=node18 --minify --legal-comments=eof --outfile=dist/analyzer/reatom-analyzer.cjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
