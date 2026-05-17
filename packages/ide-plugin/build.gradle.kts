@@ -30,7 +30,7 @@ dependencies {
         // Подключается, только если ZIP собран — иначе buildPlugin/test
         // работают без него.
         val mcpSteroidZip = providers.gradleProperty("mcpSteroidJar").orNull?.let(::file)
-            ?: fileTree("${rootProject.projectDir}/../../../mcp-steroid/ij-plugin/build/distributions") {
+            ?: fileTree("${rootProject.projectDir}/../mcp-steroid/ij-plugin/build/distributions") {
                 include("mcp-steroid-*.zip")
             }.files.firstOrNull()
         if (mcpSteroidZip?.isFile == true) {
@@ -63,17 +63,11 @@ tasks {
 
     // Самодостаточный бандл анализатора (наш код + TypeScript внутри) едет
     // ресурсом внутри плагина — потребителю не нужен npm-пакет
-    // @openide/reatom-ts-plugin. Собирается в ts-plugin: `npm run build`.
+    // @openide/reatom-ts-plugin. Бандл собирает подпроект :ts-plugin.
     processResources {
-        val analyzerBundle =
-            file("${rootProject.projectDir}/../ts-plugin/dist/analyzer/reatom-analyzer.cjs")
-        if (analyzerBundle.isFile) {
-            from(analyzerBundle) { into("analyzer") }
-        } else {
-            logger.lifecycle(
-                "[reatom-ide-plugin] бандл анализатора не найден — соберите ts-plugin: " +
-                    "npm run build --workspace @openide/reatom-ts-plugin",
-            )
+        dependsOn(":ts-plugin:buildAnalyzer")
+        from(rootProject.file("packages/ts-plugin/dist/analyzer/reatom-analyzer.cjs")) {
+            into("analyzer")
         }
     }
 }

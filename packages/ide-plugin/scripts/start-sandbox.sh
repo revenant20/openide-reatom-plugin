@@ -51,7 +51,7 @@ echo "JAVA_HOME:           $JAVA_HOME"
 echo "Проект в песочнице:  $OPEN_PROJECT"
 echo "Запуск runIde в фоне (в песочнице — reatom-ide-plugin + MCP Steroid)..."
 
-nohup "$PLUGIN_DIR/gradlew" -p "$PLUGIN_DIR" runIde \
+nohup "$REPO_DIR/gradlew" -p "$REPO_DIR" :ide-plugin:runIde \
     --args="$OPEN_PROJECT" --console=plain > "$LOG_FILE" 2>&1 &
 GRADLE_PID=$!
 echo "$GRADLE_PID" > "$PID_FILE"

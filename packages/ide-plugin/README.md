@@ -27,18 +27,21 @@ JSON-модель (вариант 2a гибридной архитектуры).
 
 ## Сборка и проверка
 
-Требуется **JDK 21**. На этой машине — `liberica-21`:
+Требуется **JDK 21** (укажите путь к нему в `JAVA_HOME`). Репозиторий — единый
+Gradle multi-project, сборка идёт **из корня**:
 
 ```bash
-export JAVA_HOME=/Users/sazonovfm/Library/Java/JavaVirtualMachines/liberica-21.0.10
+# дистрибутив плагина → packages/ide-plugin/build/distributions/reatom-ide-plugin-*.zip
+./gradlew :ide-plugin:buildPlugin
 
-# собрать дистрибутив плагина → build/distributions/reatom-ide-plugin-*.zip
-./gradlew buildPlugin
+# тесты IDE-плагина (модель + рендеринг Code Lens / gutter на BasePlatformTestCase)
+./gradlew :ide-plugin:test
 
-# прогнать тесты (модель + рендеринг Code Lens / gutter на BasePlatformTestCase)
-./gradlew test
+# собрать и проверить весь репозиторий — :ide-plugin и анализатор :ts-plugin
+./gradlew build
 ```
 
+`:ide-plugin:buildPlugin` сам соберёт бандл анализатора из подпроекта `:ts-plugin`.
 Платформа IntelliJ IDEA 2025.3 (build 253) скачивается Gradle автоматически.
 
 ## Песочница
@@ -58,18 +61,14 @@ reatom-ide-plugin, доступно AI-управление IDE. Если ZIP MC
 ## Встроенный анализатор
 
 Плагин **возит анализатор в себе** — потребителю не нужен npm-пакет
-`@openide/reatom-ts-plugin`. `ts-plugin` собирает анализатор в один
-самодостаточный `.cjs` (наш код + TypeScript внутри, esbuild), `build.gradle.kts`
-кладёт его ресурсом в jar (`analyzer/reatom-analyzer.cjs`), а
-`ReatomAnalyzerLocator` распаковывает бандл в системный каталог IDE и
-запускает `node` на нём.
+`@openide/reatom-ts-plugin`. Подпроект `:ts-plugin` собирает анализатор в один
+самодостаточный `.cjs` (наш код + TypeScript внутри, esbuild); `processResources`
+IDE-плагина зависит от таски `:ts-plugin:buildAnalyzer` и кладёт бандл ресурсом
+в jar (`analyzer/reatom-analyzer.cjs`), а `ReatomAnalyzerLocator` распаковывает
+его в системный каталог IDE и запускает `node` на нём.
 
-Поэтому перед сборкой IDE-плагина нужно собрать `ts-plugin` — иначе бандла
-не будет (`buildPlugin` это переживёт, но анализатор не заработает):
-
-```bash
-npm run build --workspace @openide/reatom-ts-plugin
-```
+Отдельно собирать `ts-plugin` не нужно — `:ide-plugin:buildPlugin` тянет
+`:ts-plugin:buildAnalyzer` сам.
 
 Анализатор запускается только если проект **реально использует Reatom** —
 зависит от `@reatom/core` (см. `ReatomAnalyzerLocator.usesReatom`).
