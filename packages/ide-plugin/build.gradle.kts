@@ -41,7 +41,8 @@ intellijPlatform {
     pluginConfiguration {
         ideaVersion {
             sinceBuild = "253"
-            untilBuild = "253.*"
+            // IntelliJ IDEA 2025.3 through 2026.3.
+            untilBuild = "263.*"
         }
     }
 }
