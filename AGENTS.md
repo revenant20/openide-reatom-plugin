@@ -27,14 +27,13 @@ npm-пакет `@openide/reatom-ts-plugin` — плагин для `typescript-l
 - диагностики (инспекции) — `.set` в `computed`, `await` без `wrap`, утечки `subscribe`, конфликты порядка `.extend(...)`, именование атомов;
 - code actions (quick-fixes / intentions);
 - completion, включая сниппеты в snippet-формате (аналог live templates);
-- hover / quick documentation;
-- inlay hints — роль сущности (`[atom]`/`[computed]`/…) и навигируемая сводка реактивных связей.
+- hover / quick documentation.
 
 Всё это отдаётся клиенту по стандартному LSP-протоколу. Работает **кросс-редакторно**: OpenIDE, VS Code, WebStorm, Neovim, Helix, Zed — везде, где есть tsserver.
 
 Code lens через TS plugin **недоступен** (нет метода в `ts.LanguageService`), категоризированный Find Usages — тоже (LSP `references` плоский). См. [docs/feature-2-code-lens.md](docs/feature-2-code-lens.md) и деление фич на класс A/B в концепции.
 
-Дополнительно ts-plugin содержит **анализатор реактивного графа** — переиспользуемое ядро (вне tsserver), на котором стоят CLI-визуализация и toolwindow IDE-плагина.
+Сейчас в `ts-plugin` реализован **анализатор реактивного графа** — переиспользуемое ядро (вне tsserver) на TypeScript Compiler API. Его самодостаточный бандл возит в себе IDE-плагин (фича 9); на том же ядре стоят CLI-визуализация и toolwindow. Семантика выше — пока план; inlay hints пробовали и убрали (дублировали Code Lens IDE-плагина).
 
 Стек: TypeScript, TypeScript Compiler API.
 
@@ -47,7 +46,7 @@ Code lens через TS plugin **недоступен** (нет метода в 
 - bundled **live templates** для JetBrains-формата;
 - страница настроек поддержки Reatom.
 
-Кроме того, IDE-плагин **бандлит TS plugin внутри себя** и регистрирует его через `initializationOptions.plugins` при инициализации `typescript-language-server` (тот сам транслирует это в `globalPlugins` / `pluginProbeLocations` tsserver) — чтобы пользователю не нужно было ставить npm-пакет и править `tsconfig.json`. Точный способ интеграции с frontend-плагином OpenIDE — открытый вопрос (см. раздел в концепции).
+Кроме того, IDE-плагин **возит в себе анализатор графа** — самодостаточный esbuild-бандл (наш код + TypeScript внутри одного `.cjs`) — и запускает его Node-процессом. Поэтому потребителю не нужен npm-пакет: достаточно зависимости `@reatom/core` в проекте. Доставка будущего LSP-слоя в tsserver — открытый вопрос (см. концепцию).
 
 Стек: Kotlin, Gradle, IntelliJ Platform SDK, Gradle IntelliJ Plugin.
 
@@ -58,7 +57,7 @@ Code lens через TS plugin **недоступен** (нет метода в 
 | Семантика (инспекции, quick-fix, completion, hover) | ✅ | — |
 | Кросс-редакторность | ✅ (любой tsserver) | ❌ (только IntelliJ-платформа) |
 | Toolwindow с графом, нативные gutter-иконки | ❌ | ✅ |
-| Доставка TS plugin в tsserver без npm | — | ✅ |
+| Доставка анализатора без npm-пакета у потребителя | — | ✅ |
 
 Правило: всё, что можно сделать в TS plugin, делается в TS plugin (ради кросс-редакторности). IDE-плагин — только для нативных IDE-фич, которые принципиально невозможны через LSP.
 
@@ -77,7 +76,7 @@ openide-reatom-plugin/
 └── templates/                # live templates: reatom.xml, reatom.code-snippets
 ```
 
-> Статус: реализованы `packages/ts-plugin` (фичи 2 и 6) и `packages/ide-plugin` (фича 9). Каталог `templates/` появится позже.
+> Статус: реализованы анализатор графа (фича 6) в `packages/ts-plugin` и нативные Code Lens / gutter-иконки / навигация (фича 9) в `packages/ide-plugin`. Inlay hints (фича 2) пробовали через TS LS-плагин, но убрали — дублировали Code Lens. Каталог `templates/` появится позже.
 
 ## Правила работы
 

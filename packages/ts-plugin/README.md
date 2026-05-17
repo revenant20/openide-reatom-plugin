@@ -1,32 +1,30 @@
 # @openide/reatom-ts-plugin
 
-TypeScript Language Service plugin для [Reatom v1001](https://v1001.reatom.dev).
-Загружается внутрь `tsserver` и добавляет кросс-редакторную семантику Reatom
-поверх стандартного LSP-стека.
+Анализатор реактивного графа [Reatom v1001](https://v1001.reatom.dev). По
+проекту на TypeScript Compiler API строит модель: узлы `atom` / `computed` /
+`action` / `effect` и рёбра `read` / `write` / `extend`. На этой модели стоят
+Code Lens, gutter-иконки и навигация `reatom-ide-plugin`.
 
-Полная концепция — [docs/features-reatom-plugin.md](../../docs/features-reatom-plugin.md).
+Полная концепция — [docs/features-reatom-plugin.md](../../docs/features-reatom-plugin.md),
+дизайн анализатора — [docs/feature-6-analyzer.md](../../docs/feature-6-analyzer.md).
 
-## Реализовано
+## Состав
 
-### Фича 2 — Inlay hints
+- `src/analyzer/` — анализатор: `cli.ts` (one-shot CLI) и `graph.ts`
+  (построение модели по готовой `ts.Program`);
+- `src/units.ts`, `src/activation.ts` — детекция Reatom-юнитов по резолвингу
+  символов фабрик (чужие одноимённые `atom` / `action` отсекаются).
 
-Серые инлайновые подписи у объявлений `atom` / `computed` / `action` / `effect`:
+CLI: `node dist/analyzer/cli.js --project path/to/tsconfig.json` — печатает
+JSON-модель графа в stdout.
 
-```
-const counter ⟦: atom · ↑3 · ↓1⟧ = atom(0, 'counter')
-const data    ⟦: atom · ↑0 · ↓0 · ⤴withCache⟧ = atom(0, 'data').extend(withCache())
-```
+## Бандл для IDE-плагина
 
-- **роль сущности** — `atom` / `computed` / `action` / `effect`, по резолвингу
-  символа фабрики (чужие одноимённые функции отсекаются);
-- **сводка связей** — `↑N` читатели (`unit()`), `↓N` писатели (`unit.set(...)`),
-  подсчёт по всему проекту с кэшем по `Program`;
-- **`with*`-расширения** — навигируемые сегменты подписи (Ctrl/Cmd-click ведёт
-  к определению расширения).
-
-> ⚠️ Видимость у пользователя завязана на гейт `areInlayHintsEnabledForFile`
-> в `typescript-language-server`: если выключены **все** штатные TS inlay hints,
-> `provideInlayHints` вообще не вызывается. См. `docs/feature-2-inlay-hints.md`.
+`npm run build` помимо `tsc` собирает esbuild'ом самодостаточный бандл
+`dist/analyzer/reatom-analyzer.cjs` — весь анализатор плюс TypeScript внутри
+одного файла. `reatom-ide-plugin` кладёт этот бандл ресурсом в свой
+дистрибутив и запускает сам, поэтому потребителю **не нужно** ставить этот
+npm-пакет — достаточно зависимости `@reatom/core` в проекте.
 
 ## Разработка
 
