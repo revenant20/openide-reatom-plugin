@@ -24,6 +24,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
+import org.jetbrains.annotations.VisibleForTesting
 import java.io.File
 
 /** Resolved paths needed to run the reactive graph analyzer. */
@@ -80,7 +81,8 @@ object ReatomAnalyzerLocator {
      * dependencies of some `package.json` up the tree, or installed in
      * `node_modules` (accounts for dependency hoisting in monorepos).
      */
-    private fun usesReatom(start: File): Boolean {
+    @VisibleForTesting
+    internal fun usesReatom(start: File): Boolean {
         var directory: File? = start
         while (directory != null) {
             val packageJson = File(directory, "package.json")
@@ -109,10 +111,21 @@ object ReatomAnalyzerLocator {
     private fun bundledAnalyzer(): File? {
         val version = PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "dev"
         val target = File(PathManager.getSystemPath(), "reatom-analyzer/analyzer-$version.cjs")
+        return extractBundle(BUNDLE_RESOURCE, target)
+    }
+
+    /**
+     * Extracts the classpath resource [resourceName] into [target] via an
+     * atomic temp-file rename. Idempotent: an existing non-empty [target] is
+     * reused as is. Returns [target], or null if the resource is absent or
+     * extraction fails.
+     */
+    @VisibleForTesting
+    internal fun extractBundle(resourceName: String, target: File): File? {
         if (target.isFile && target.length() > 0L) return target
         return try {
             val resource = ReatomAnalyzerLocator::class.java.classLoader
-                .getResourceAsStream(BUNDLE_RESOURCE)
+                .getResourceAsStream(resourceName)
                 ?: run {
                     thisLogger().warn("Reatom: analyzer bundle not found in the plugin")
                     return null
@@ -137,7 +150,8 @@ object ReatomAnalyzerLocator {
     }
 
     /** Looks for `relative` in `start` and up the directory tree. */
-    private fun findUpwards(start: File, relative: String): File? {
+    @VisibleForTesting
+    internal fun findUpwards(start: File, relative: String): File? {
         var directory: File? = start
         while (directory != null) {
             val candidate = File(directory, relative)
