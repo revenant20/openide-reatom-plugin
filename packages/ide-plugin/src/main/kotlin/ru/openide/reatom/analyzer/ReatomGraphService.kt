@@ -3,11 +3,18 @@ package ru.openide.reatom.analyzer
 import com.google.gson.Gson
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
+import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import com.intellij.util.Alarm
 import ru.openide.reatom.model.ReatomGraph
 
 /**
@@ -15,21 +22,63 @@ import ru.openide.reatom.model.ReatomGraph
  * запуская анализатор `@openide/reatom-ts-plugin` отдельным Node-процессом
  * (вариант 2a гибридной архитектуры). Code Lens и gutter-иконки читают
  * модель отсюда.
+ *
+ * Граф перестраивается при открытии проекта и после паузы в редактировании
+ * любого `.ts`/`.tsx`-файла проекта: иначе offset'ы узлов устаревают и
+ * Code Lens съезжает с объявлений (gutter-иконки на `RangeHighlighter`
+ * двигаются вместе с текстом, а Code Lens пересчитывается со старых offset'ов).
  */
 @Service(Service.Level.PROJECT)
-class ReatomGraphService(private val project: Project) {
+class ReatomGraphService(private val project: Project) : Disposable {
 
     @Volatile
     var graph: ReatomGraph? = null
         private set
 
-    @Volatile
+    private val lock = Any()
     private var loading = false
+    private var pendingReload = false
+
+    /** Дебаунсер перестроек: коалесцирует пачку правок в один запуск Node. */
+    private val reloadAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
+
+    init {
+        EditorFactory.getInstance().eventMulticaster.addDocumentListener(
+            object : DocumentListener {
+                override fun documentChanged(event: DocumentEvent) {
+                    if (affectsGraph(event.document)) scheduleReload()
+                }
+            },
+            this,
+        )
+    }
+
+    /**
+     * Планирует перестройку графа после паузы в редактировании: сбрасывает
+     * прежний запрос и ставит новый. По срабатыванию сохраняет документы на
+     * диск (анализатор читает файлы с диска) и запускает Node.
+     */
+    fun scheduleReload() {
+        reloadAlarm.cancelAllRequests()
+        reloadAlarm.addRequest(
+            {
+                FileDocumentManager.getInstance().saveAllDocuments()
+                reloadAsync()
+            },
+            RELOAD_DEBOUNCE_MS,
+        )
+    }
 
     /** Перестраивает граф в фоне; по завершении обновляет UI на EDT. */
     fun reloadAsync() {
-        if (loading) return
-        loading = true
+        synchronized(lock) {
+            if (loading) {
+                // Перестройка уже идёт — догоним её одним повтором по завершении.
+                pendingReload = true
+                return
+            }
+            loading = true
+        }
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val built = runAnalyzer()
@@ -40,7 +89,11 @@ class ReatomGraphService(private val project: Project) {
                     }
                 }
             } finally {
-                loading = false
+                val rerun = synchronized(lock) {
+                    loading = false
+                    pendingReload.also { pendingReload = false }
+                }
+                if (rerun) reloadAsync()
             }
         }
     }
@@ -48,6 +101,16 @@ class ReatomGraphService(private val project: Project) {
     /** Для тестов: задать модель напрямую, минуя запуск Node. */
     fun setGraphForTesting(value: ReatomGraph?) {
         graph = value
+    }
+
+    override fun dispose() = Unit
+
+    /** Правка влияет на граф, если это `.ts`/`.tsx`-файл внутри проекта. */
+    private fun affectsGraph(document: Document): Boolean {
+        val file = FileDocumentManager.getInstance().getFile(document) ?: return false
+        if (file.extension?.lowercase() !in TS_EXTENSIONS) return false
+        val base = project.basePath ?: return false
+        return file.path.startsWith(base)
     }
 
     private fun runAnalyzer(): ReatomGraph? {
@@ -78,6 +141,8 @@ class ReatomGraphService(private val project: Project) {
 
     companion object {
         private const val ANALYZER_TIMEOUT_MS = 60_000
+        private const val RELOAD_DEBOUNCE_MS = 1_200
+        private val TS_EXTENSIONS = setOf("ts", "tsx", "mts", "cts")
 
         fun getInstance(project: Project): ReatomGraphService = project.service()
     }
