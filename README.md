@@ -38,8 +38,7 @@ A monorepo of two packages with a single Gradle build:
 
 ## Build
 
-**JDK 21** is required. The repository is a single Gradle multi-project; build
-from the root:
+The repository is a single Gradle multi-project; build from the root:
 
 ```bash
 # build and check everything: the analyzer, the IDE plugin, the tests
@@ -49,9 +48,11 @@ from the root:
 ./gradlew :ide-plugin:buildPlugin
 ```
 
-The IntelliJ IDEA 2025.3 platform and the Node runtime for building the
-analyzer are downloaded automatically. An IDE sandbox with the plugin installed
-is started by `packages/ide-plugin/scripts/start-sandbox.sh`. The plugin is not
+Gradle provisions everything itself — the JDK 21 toolchain, the IntelliJ IDEA
+2025.3 platform, and the Node runtime for building the analyzer — so no
+`JAVA_HOME` or SDK setup is needed (any JDK is enough to launch Gradle). An IDE
+sandbox with the plugin installed is started by
+`packages/ide-plugin/scripts/start-sandbox.sh`. The plugin is not
 yet published to the marketplace — it is installed from the built distribution.
 
 ## Status

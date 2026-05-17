@@ -27,8 +27,8 @@ and reads the JSON model (variant 2a of the hybrid architecture).
 
 ## Building and verifying
 
-**JDK 21** is required (point `JAVA_HOME` at it). The repository is a single
-Gradle multi-project; the build runs **from the root**:
+The repository is a single Gradle multi-project; the build runs **from the
+root**:
 
 ```bash
 # plugin distribution → packages/ide-plugin/build/distributions/reatom-ide-plugin-*.zip
@@ -41,8 +41,10 @@ Gradle multi-project; the build runs **from the root**:
 ./gradlew build
 ```
 
-`:ide-plugin:buildPlugin` builds the analyzer bundle from the `:ts-plugin` subproject itself.
-The IntelliJ IDEA 2025.3 platform (build 253) is downloaded by Gradle automatically.
+`:ide-plugin:buildPlugin` builds the analyzer bundle from the `:ts-plugin`
+subproject itself. The JDK 21 toolchain, the IntelliJ IDEA 2025.3 platform
+(build 253), and the Node runtime are provisioned by Gradle automatically — no
+`JAVA_HOME` setup is required (any JDK is enough to launch Gradle).
 
 ## Sandbox
 

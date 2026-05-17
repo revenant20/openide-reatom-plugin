@@ -35,19 +35,15 @@ if [[ -f "$PID_FILE" ]]; then
     rm -f "$PID_FILE"
 fi
 
-# --- JAVA_HOME (JDK 21 required) ---
-if [[ -z "${JAVA_HOME:-}" ]]; then
-    JAVA_HOME="$(/usr/libexec/java_home -v 21 2>/dev/null \
-        || echo "$HOME/Library/Java/JavaVirtualMachines/liberica-21.0.10")"
-fi
-export JAVA_HOME
-if [[ ! -d "$JAVA_HOME" ]]; then
-    echo "ERROR: JAVA_HOME does not exist: $JAVA_HOME"
-    exit 1
+# The build pins JDK 21 itself via a Gradle toolchain (see build.gradle.kts);
+# the Gradle launcher still needs some JDK to start. If JAVA_HOME is unset,
+# discover one (macOS) — otherwise Gradle falls back to a JDK on PATH.
+if [[ -z "${JAVA_HOME:-}" ]] && command -v /usr/libexec/java_home >/dev/null 2>&1; then
+    DISCOVERED_JDK="$(/usr/libexec/java_home 2>/dev/null || true)"
+    [[ -n "$DISCOVERED_JDK" ]] && export JAVA_HOME="$DISCOVERED_JDK"
 fi
 
 mkdir -p "$PLUGIN_DIR/build"
-echo "JAVA_HOME:           $JAVA_HOME"
 echo "Sandbox project:     $OPEN_PROJECT"
 echo "Starting runIde in the background (sandbox — reatom-ide-plugin + MCP Steroid)..."
 

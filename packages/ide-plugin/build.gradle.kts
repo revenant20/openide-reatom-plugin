@@ -52,10 +52,6 @@ intellijPlatform {
 }
 
 tasks {
-    withType<JavaCompile> {
-        sourceCompatibility = "21"
-        targetCompatibility = "21"
-    }
     // Indexing searchable options spins up a headless IDE and is not needed by the plugin.
     buildSearchableOptions {
         enabled = false
@@ -81,7 +77,8 @@ tasks.named<org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask>("runIde") {
 }
 
 kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
-    }
+    // JDK 21 toolchain — Gradle locates the JDK itself (or downloads it via the
+    // foojay resolver in settings.gradle.kts), so the build needs no JAVA_HOME
+    // setup. This also pins the Kotlin/Java bytecode target to 21.
+    jvmToolchain(21)
 }
