@@ -1,10 +1,8 @@
 {
   "name": "@openide/reatom-ts-plugin",
   "version": "0.0.0",
-  "description": "TypeScript Language Service plugin для Reatom v1001 — кросс-редакторная семантика поверх tsserver",
+  "description": "Анализатор реактивного графа Reatom v1001 — строит JSON-модель связей для reatom-ide-plugin",
   "license": "MIT",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
@@ -13,9 +11,6 @@
     "build:analyzer": "esbuild src/analyzer/cli.ts --bundle --platform=node --target=node18 --minify --legal-comments=none --outfile=dist/analyzer/reatom-analyzer.cjs",
     "test": "vitest run",
     "test:watch": "vitest"
-  },
-  "peerDependencies": {
-    "typescript": ">=4.9"
   },
   "devDependencies": {
     "@types/node": "^25.8.0",
