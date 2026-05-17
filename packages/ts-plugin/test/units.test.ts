@@ -62,22 +62,4 @@ describe('findReatomUnits', () => {
     expect(units).toHaveLength(1);
     expect(units[0].extensions.map((e) => e.name)).toEqual(['withAsync', 'withCache']);
   });
-
-  it('у расширения есть target — навигируемый сегмент', () => {
-    const units = unitsOf({
-      'model.ts': `
-        import { atom, withCache } from '@reatom/core';
-        const data = atom(0, 'data').extend(withCache());
-      `,
-    });
-    const ext = units[0].extensions[0];
-    expect(ext.name).toBe('withCache');
-    expect(ext.target?.fileName).toContain('@reatom/core');
-  });
-
-  it('namePosition указывает на конец идентификатора переменной', () => {
-    const source = `import { atom } from '@reatom/core';\nconst counter = atom(0);`;
-    const units = unitsOf({ 'model.ts': source });
-    expect(units[0].namePosition).toBe(source.indexOf('counter') + 'counter'.length);
-  });
 });

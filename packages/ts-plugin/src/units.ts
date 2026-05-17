@@ -1,7 +1,7 @@
 import type * as ts from 'typescript';
 import { isReatomSymbol } from './activation';
 
-/** Роль Reatom-сущности — то, что показывает inlay hint. */
+/** Роль Reatom-сущности: `atom` / `computed` / `action` / `effect`. */
 export type ReatomUnitKind = 'atom' | 'computed' | 'action' | 'effect';
 
 /** Имена фабрик `@reatom/core`, создающих юниты, → роль. */
@@ -16,20 +16,14 @@ const FACTORY_KIND: Readonly<Record<string, ReatomUnitKind>> = {
 export interface ReatomExtension {
   /** Имя расширения, как в коде: `withAsync`, `withCache`, … */
   name: string;
-  /** Место определения расширения — цель Ctrl/Cmd-click по сегменту подписи. */
-  target?: { fileName: string; start: number; end: number };
 }
 
 /** Объявление Reatom-юнита, найденное в исходнике. */
 export interface ReatomUnit {
   kind: ReatomUnitKind;
   name: string;
-  /** Символ объявленной переменной. */
-  symbol: ts.Symbol;
   /** Узел-объявление — стабильный ключ для счётчиков использований. */
   declaration: ts.VariableDeclaration;
-  /** Offset сразу за идентификатором переменной — якорь inlay hint. */
-  namePosition: number;
   /** `with*`-расширения из `.extend(...)`, в порядке применения. */
   extensions: ReatomExtension[];
 }
@@ -99,31 +93,9 @@ function classifyFactory(
   return FACTORY_KIND[symbol!.getName()];
 }
 
-/** Находит место определения символа — для навигируемого сегмента подписи. */
-function resolveDefinition(
-  tsm: typeof ts,
-  checker: ts.TypeChecker,
-  id: ts.Identifier,
-): ReatomExtension['target'] {
-  const symbol = resolveAlias(tsm, checker, checker.getSymbolAtLocation(id));
-  const decl = symbol?.declarations?.[0];
-  if (!decl) return undefined;
-  const target: ts.Node =
-    (tsm.isVariableDeclaration(decl) || tsm.isFunctionDeclaration(decl)) && decl.name
-      ? decl.name
-      : decl;
-  const sourceFile = target.getSourceFile();
-  return {
-    fileName: sourceFile.fileName,
-    start: target.getStart(sourceFile),
-    end: target.getEnd(),
-  };
-}
-
-/** Собирает `with*`-расширения из аргументов `.extend(...)`. */
+/** Собирает имена `with*`-расширений из аргументов `.extend(...)`. */
 function collectExtensions(
   tsm: typeof ts,
-  checker: ts.TypeChecker,
   extendCalls: ts.CallExpression[],
 ): ReatomExtension[] {
   const extensions: ReatomExtension[] = [];
@@ -138,7 +110,7 @@ function collectExtensions(
           ? arg
           : undefined;
       if (!id) continue;
-      extensions.push({ name: id.text, target: resolveDefinition(tsm, checker, id) });
+      extensions.push({ name: id.text });
     }
   }
   return extensions;
@@ -157,23 +129,17 @@ function tryReadUnit(
   const kind = classifyFactory(tsm, checker, base);
   if (!kind) return undefined;
 
-  const symbol = checker.getSymbolAtLocation(decl.name);
-  if (!symbol) return undefined;
-
   return {
     kind,
     name: decl.name.text,
-    symbol,
     declaration: decl,
-    namePosition: decl.name.getEnd(),
-    extensions: collectExtensions(tsm, checker, extendCalls),
+    extensions: collectExtensions(tsm, extendCalls),
   };
 }
 
 /**
  * Находит все объявления Reatom-юнитов в файле: `const X = atom(...)` и т.п.,
- * включая цепочки `.extend(...)`. Обход всего файла — позиционная фильтрация
- * по видимому `span` остаётся на стороне вызывающего.
+ * включая цепочки `.extend(...)`.
  */
 export function findReatomUnits(
   tsm: typeof ts,
