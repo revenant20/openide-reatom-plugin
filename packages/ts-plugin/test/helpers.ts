@@ -99,46 +99,6 @@ export function createProgram(files: Record<string, string>): ProgramFixture {
   return { program, file: (relative) => path.join(dir, relative) };
 }
 
-/** A project fixture on top of `LanguageService` — for testing the plugin as a whole. */
-export interface LanguageServiceFixture {
-  service: ts.LanguageService;
-  file: (relative: string) => string;
-}
-
-/** Builds a `ts.LanguageService` from a set of fixtures. */
-export function createLanguageService(
-  files: Record<string, string>,
-): LanguageServiceFixture {
-  const dir = materialize(files);
-  const scriptNames = projectScriptNames(dir, files);
-  const host: ts.LanguageServiceHost = {
-    getScriptFileNames: () => scriptNames,
-    getScriptVersion: () => '1',
-    getScriptSnapshot: (name) => {
-      const text = ts.sys.readFile(name);
-      return text === undefined ? undefined : ts.ScriptSnapshot.fromString(text);
-    },
-    getCurrentDirectory: () => dir,
-    getCompilationSettings: () => COMPILER_OPTIONS,
-    getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
-    fileExists: ts.sys.fileExists,
-    readFile: ts.sys.readFile,
-    readDirectory: ts.sys.readDirectory,
-    directoryExists: ts.sys.directoryExists,
-    getDirectories: ts.sys.getDirectories,
-  };
-  return {
-    service: ts.createLanguageService(host),
-    file: (relative) => path.join(dir, relative),
-  };
-}
-
-/** The full range of a file — for `provideInlayHints`. */
-export function fullSpan(program: ts.Program, fileName: string): ts.TextSpan {
-  const sourceFile = program.getSourceFile(fileName);
-  return { start: 0, length: sourceFile ? sourceFile.text.length : 0 };
-}
-
 /** Removes the temporary fixture directories. Call in `afterAll`. */
 export function cleanupFixtures(): void {
   for (const dir of createdDirs.splice(0)) {
