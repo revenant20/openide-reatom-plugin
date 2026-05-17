@@ -152,7 +152,10 @@ class ReatomGraphService(private val project: Project) : Disposable {
 
     private fun runAnalyzer(): ReatomGraph? {
         val locations = ReatomAnalyzerLocator.locate(project) ?: run {
-            thisLogger().info("Reatom: анализатор или tsconfig не найдены — граф не построен")
+            thisLogger().info(
+                "Reatom: проект не использует Reatom либо не найдены node/CLI/tsconfig — " +
+                    "граф не построен",
+            )
             return null
         }
         return try {
