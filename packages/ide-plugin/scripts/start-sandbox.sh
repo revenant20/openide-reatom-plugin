@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Starts the IDE sandbox with the reatom-ide-plugin plugin.
 #
-# The sandbox is brought up by this plugin itself (its runIde). MCP Steroid is
-# attached to the sandbox build via localPlugin (see build.gradle.kts) — the
-# IDE is controllable by an AI agent. By default it opens reatom-playground —
-# where the Code Lens and gutter icons of feature 9 are visible.
+# The sandbox is brought up by this plugin itself (its runIde). By default it
+# opens the in-repo demo (examples/reatom-demo) — where the Code Lens and
+# gutter icons are visible. MCP Steroid is attached only when opted in (see the
+# mcpSteroidDir property in build.gradle.kts).
 #
 #   ./scripts/start-sandbox.sh [project-path]
 set -euo pipefail
@@ -12,10 +12,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_DIR="$(cd "$PLUGIN_DIR/../.." && pwd)"
-IDE_PROJECTS_DIR="$(cd "$REPO_DIR/.." && pwd)"
 
 # The project that will be opened in the sandbox.
-OPEN_PROJECT="${1:-$IDE_PROJECTS_DIR/reatom-playground}"
+OPEN_PROJECT="${1:-$REPO_DIR/examples/reatom-demo}"
 if [[ ! -d "$OPEN_PROJECT" ]]; then
     echo "ERROR: project directory not found: $OPEN_PROJECT"
     exit 1
@@ -45,7 +44,7 @@ fi
 
 mkdir -p "$PLUGIN_DIR/build"
 echo "Sandbox project:     $OPEN_PROJECT"
-echo "Starting runIde in the background (sandbox — reatom-ide-plugin + MCP Steroid)..."
+echo "Starting runIde in the background (sandbox — reatom-ide-plugin)..."
 
 nohup "$REPO_DIR/gradlew" -p "$REPO_DIR" :ide-plugin:runIde \
     --args="$OPEN_PROJECT" --console=plain > "$LOG_FILE" 2>&1 &

@@ -50,10 +50,23 @@ The repository is a single Gradle multi-project; build from the root:
 
 Gradle provisions everything itself — the JDK 21 toolchain, the IntelliJ IDEA
 2025.3 platform, and the Node runtime for building the analyzer — so no
-`JAVA_HOME` or SDK setup is needed (any JDK is enough to launch Gradle). An IDE
-sandbox with the plugin installed is started by
-`packages/ide-plugin/scripts/start-sandbox.sh`. The plugin is not
-yet published to the marketplace — it is installed from the built distribution.
+`JAVA_HOME` or SDK setup is needed (any JDK is enough to launch Gradle). The
+plugin is not yet published to the marketplace — it is installed from the built
+distribution.
+
+## Demo
+
+`examples/reatom-demo` is a small `@reatom/core` consumer project — a toy
+shopping cart covering `atom` / `computed` / `action` / `effect`, an extension,
+and cross-file links. Open it in an IDE with the plugin to see the Code Lens
+and gutter icons:
+
+```bash
+cd examples/reatom-demo && npm install
+```
+
+`packages/ide-plugin/scripts/start-sandbox.sh` brings up an IDE sandbox with
+the plugin already installed and opens this demo by default.
 
 ## Status
 

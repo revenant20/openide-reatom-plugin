@@ -1,0 +1,16 @@
+{
+  "name": "reatom-demo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Demo consumer project for openide-reatom-plugin — open it in an IDE with the plugin to see Code Lens and gutter icons",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@reatom/core": "^1001.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  }
+}
