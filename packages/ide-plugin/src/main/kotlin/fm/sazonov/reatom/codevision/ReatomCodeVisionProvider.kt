@@ -34,7 +34,11 @@ import fm.sazonov.reatom.navigation.ReatomNavigation
  * Native IntelliJ-platform Code Lens: a clickable summary line above
  * `atom` / `computed` / `action` / `effect` declarations. Works on the offsets
  * of the graph model, without PSI (there is no TS-PSI in OpenIDE).
+ *
+ * `CodeVisionProvider` is `@ApiStatus.Experimental` — there is no stable
+ * platform API for native Code Lens, so the unstable-API warning is suppressed.
  */
+@Suppress("UnstableApiUsage")
 class ReatomCodeVisionProvider : CodeVisionProvider<Unit> {
 
     override val id: String = ID

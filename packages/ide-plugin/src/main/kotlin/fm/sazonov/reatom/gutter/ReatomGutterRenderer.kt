@@ -110,7 +110,7 @@ object ReatomGutterRenderer {
         for (edge in graph.edges) {
             if (edge.file != filePath || edge.to !in nodesById) continue
             val start = edge.range.start
-            if (start < 0 || start >= documentLength) continue
+            if (start !in 0 until documentLength) continue
             byLine.getOrPut(editor.document.getLineNumber(start)) { ArrayList() }.add(edge)
         }
         for (edges in byLine.values) {

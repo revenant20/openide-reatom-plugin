@@ -30,7 +30,8 @@ import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.Alarm
+import com.intellij.util.ui.update.MergingUpdateQueue
+import com.intellij.util.ui.update.Update
 import fm.sazonov.reatom.model.GraphRange
 import fm.sazonov.reatom.model.ReatomGraph
 
@@ -58,10 +59,12 @@ class ReatomGraphService(private val project: Project) : Disposable {
     private var pendingReload = false
 
     /** Re-analysis debouncer: coalesces a batch of edits into one Node run. */
-    private val reloadAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
+    private val reloadQueue =
+        MergingUpdateQueue("reatom.reload", RELOAD_DEBOUNCE_MS, true, null, this)
 
     /** Debouncer for the quick rebuild of gutter icons after edits. */
-    private val gutterAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
+    private val gutterQueue =
+        MergingUpdateQueue("reatom.gutter", GUTTER_DEBOUNCE_MS, true, null, this)
 
     init {
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(
@@ -79,19 +82,15 @@ class ReatomGraphService(private val project: Project) : Disposable {
     }
 
     /**
-     * Schedules a re-analysis after a pause in editing: cancels the previous
-     * request and queues a new one. When it fires, saves the documents to disk
-     * (the analyzer reads files from disk) and launches Node.
+     * Schedules a re-analysis after a pause in editing: repeated calls within
+     * the debounce window coalesce into one run. When it fires, saves the
+     * documents to disk (the analyzer reads files from disk) and launches Node.
      */
     fun scheduleReload() {
-        reloadAlarm.cancelAllRequests()
-        reloadAlarm.addRequest(
-            {
-                FileDocumentManager.getInstance().saveAllDocuments()
-                reloadAsync()
-            },
-            RELOAD_DEBOUNCE_MS,
-        )
+        reloadQueue.queue(Update.create(RELOAD_TASK) {
+            FileDocumentManager.getInstance().saveAllDocuments()
+            reloadAsync()
+        })
     }
 
     /**
@@ -102,11 +101,9 @@ class ReatomGraphService(private val project: Project) : Disposable {
      * that — `shiftGraph` has already corrected the offsets in memory).
      */
     fun scheduleGutterRefresh() {
-        gutterAlarm.cancelAllRequests()
-        gutterAlarm.addRequest(
-            { ReatomGraphRefresher.refreshGutters(project) },
-            GUTTER_DEBOUNCE_MS,
-        )
+        gutterQueue.queue(Update.create(GUTTER_TASK) {
+            ReatomGraphRefresher.refreshGutters(project)
+        })
     }
 
     /**
@@ -221,6 +218,11 @@ class ReatomGraphService(private val project: Project) : Disposable {
         private const val ANALYZER_TIMEOUT_MS = 60_000
         private const val RELOAD_DEBOUNCE_MS = 1_200
         private const val GUTTER_DEBOUNCE_MS = 250
+
+        /** Merge identities — re-queuing the same identity coalesces updates. */
+        private const val RELOAD_TASK = "reload"
+        private const val GUTTER_TASK = "gutter"
+
         private val TS_EXTENSIONS = setOf("ts", "tsx", "mts", "cts")
 
         fun getInstance(project: Project): ReatomGraphService = project.service()

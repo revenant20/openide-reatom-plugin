@@ -135,7 +135,7 @@ object ReatomNavigation {
         val graph = ReatomGraphService.getInstance(project).graph
         val node = graph?.nodes?.find { it.id == nodeId }
         val name = node?.name ?: nodeId
-        val edges = (if (graph != null) ReatomGraphModel.usagesOf(graph, nodeId) else emptyList())
+        val edges = graph?.let { ReatomGraphModel.usagesOf(it, nodeId) }.orEmpty()
             .filter { filter.matches(it.kind) }
 
         if (edges.isEmpty()) {
@@ -219,12 +219,9 @@ object ReatomNavigation {
         val groups = LinkedHashMap<Pair<String, Int>, MutableList<ReatomGraphEdge>>()
         for (edge in edges) {
             val document = documentFor(edge.file)
-            val line =
-                if (document != null) {
-                    document.getLineNumber(edge.range.start.coerceIn(0, document.textLength))
-                } else {
-                    -1
-                }
+            val line = document
+                ?.let { doc -> doc.getLineNumber(edge.range.start.coerceIn(0, doc.textLength)) }
+                ?: -1
             groups.getOrPut(edge.file to line) { ArrayList() }.add(edge)
         }
         return groups.map { (key, group) ->

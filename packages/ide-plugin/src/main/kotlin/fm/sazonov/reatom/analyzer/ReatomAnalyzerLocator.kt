@@ -101,6 +101,7 @@ object ReatomAnalyzerLocator {
                 root.getAsJsonObject(section)?.has(REATOM_PACKAGE) == true
             }
         } catch (e: Exception) {
+            thisLogger().debug("Reatom: ignoring an unreadable package.json: $packageJson", e)
             false
         }
 
