@@ -8,13 +8,14 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.Alarm
+import ru.openide.reatom.model.GraphRange
 import ru.openide.reatom.model.ReatomGraph
 
 /**
@@ -23,10 +24,10 @@ import ru.openide.reatom.model.ReatomGraph
  * (вариант 2a гибридной архитектуры). Code Lens и gutter-иконки читают
  * модель отсюда.
  *
- * Граф перестраивается при открытии проекта и после паузы в редактировании
- * любого `.ts`/`.tsx`-файла проекта: иначе offset'ы узлов устаревают и
- * Code Lens съезжает с объявлений (gutter-иконки на `RangeHighlighter`
- * двигаются вместе с текстом, а Code Lens пересчитывается со старых offset'ов).
+ * При редактировании `.ts`/`.tsx`-файла offset'ы узлов в графе сразу
+ * сдвигаются на дельту правки — Code Lens едет вместе с текстом, не дожидаясь
+ * Node и без жёсткого сброса. Полный ре-анализ запускается в фоне после паузы:
+ * он нужен лишь для структурных изменений (новые/удалённые юниты и связи).
  */
 @Service(Service.Level.PROJECT)
 class ReatomGraphService(private val project: Project) : Disposable {
@@ -39,14 +40,17 @@ class ReatomGraphService(private val project: Project) : Disposable {
     private var loading = false
     private var pendingReload = false
 
-    /** Дебаунсер перестроек: коалесцирует пачку правок в один запуск Node. */
+    /** Дебаунсер ре-анализа: коалесцирует пачку правок в один запуск Node. */
     private val reloadAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
 
     init {
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(
             object : DocumentListener {
                 override fun documentChanged(event: DocumentEvent) {
-                    if (affectsGraph(event.document)) scheduleReload()
+                    val file = FileDocumentManager.getInstance().getFile(event.document)
+                    if (file == null || !affectsGraph(file)) return
+                    shiftGraph(file.path, event.offset, event.newLength - event.oldLength)
+                    scheduleReload()
                 }
             },
             this,
@@ -54,9 +58,9 @@ class ReatomGraphService(private val project: Project) : Disposable {
     }
 
     /**
-     * Планирует перестройку графа после паузы в редактировании: сбрасывает
-     * прежний запрос и ставит новый. По срабатыванию сохраняет документы на
-     * диск (анализатор читает файлы с диска) и запускает Node.
+     * Планирует ре-анализ после паузы в редактировании: сбрасывает прежний
+     * запрос и ставит новый. По срабатыванию сохраняет документы на диск
+     * (анализатор читает файлы с диска) и запускает Node.
      */
     fun scheduleReload() {
         reloadAlarm.cancelAllRequests()
@@ -69,29 +73,38 @@ class ReatomGraphService(private val project: Project) : Disposable {
         )
     }
 
-    /** Перестраивает граф в фоне; по завершении обновляет UI на EDT. */
+    /**
+     * Перестраивает граф в фоне. Результат применяется, только если за время
+     * анализа файлы не правились (иначе сдвинутый в памяти граф точнее —
+     * `built` отдаётся следующему прогону) и он отличается от текущего;
+     * по применению обновляет UI на EDT.
+     */
     fun reloadAsync() {
         synchronized(lock) {
             if (loading) {
-                // Перестройка уже идёт — догоним её одним повтором по завершении.
                 pendingReload = true
                 return
             }
             loading = true
         }
         ApplicationManager.getApplication().executeOnPooledThread {
+            var built: ReatomGraph? = null
             try {
-                val built = runAnalyzer()
-                if (built != null) {
-                    graph = built
+                built = runAnalyzer()
+            } finally {
+                val rerun: Boolean
+                val applied: Boolean
+                synchronized(lock) {
+                    loading = false
+                    rerun = pendingReload
+                    pendingReload = false
+                    applied = built != null && !rerun && built != graph
+                    if (applied) graph = built
+                }
+                if (applied) {
                     ApplicationManager.getApplication().invokeLater {
                         ReatomGraphRefresher.refreshAll(project)
                     }
-                }
-            } finally {
-                val rerun = synchronized(lock) {
-                    loading = false
-                    pendingReload.also { pendingReload = false }
                 }
                 if (rerun) reloadAsync()
             }
@@ -106,11 +119,35 @@ class ReatomGraphService(private val project: Project) : Disposable {
     override fun dispose() = Unit
 
     /** Правка влияет на граф, если это `.ts`/`.tsx`-файл внутри проекта. */
-    private fun affectsGraph(document: Document): Boolean {
-        val file = FileDocumentManager.getInstance().getFile(document) ?: return false
+    private fun affectsGraph(file: VirtualFile): Boolean {
         if (file.extension?.lowercase() !in TS_EXTENSIONS) return false
         val base = project.basePath ?: return false
         return file.path.startsWith(base)
+    }
+
+    /**
+     * Сдвигает offset'ы узлов и рёбер файла `path` на `delta` после позиции
+     * `at` — чтобы Code Lens сразу встал по месту, не дожидаясь ре-анализа.
+     */
+    private fun shiftGraph(path: String, at: Int, delta: Int) {
+        if (delta == 0) return
+        synchronized(lock) {
+            val current = graph ?: return
+            fun shifted(range: GraphRange): GraphRange =
+                when {
+                    range.start >= at -> GraphRange(range.start + delta, range.end + delta)
+                    range.end > at -> GraphRange(range.start, range.end + delta)
+                    else -> range
+                }
+            graph = current.copy(
+                nodes = current.nodes.map {
+                    if (it.file == path) it.copy(range = shifted(it.range)) else it
+                },
+                edges = current.edges.map {
+                    if (it.file == path) it.copy(range = shifted(it.range)) else it
+                },
+            )
+        }
     }
 
     private fun runAnalyzer(): ReatomGraph? {
