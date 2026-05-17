@@ -11,6 +11,7 @@ import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.Key
+import ru.openide.reatom.ReatomBundle
 import ru.openide.reatom.analyzer.ReatomGraphService
 import ru.openide.reatom.model.ReatomGraphModel
 import ru.openide.reatom.model.ReatomGraphNode
@@ -100,10 +101,25 @@ private class ReatomGutterIconRenderer(
         if (filter == UsageFilter.WRITE) AllIcons.Gutter.WriteAccess
         else AllIcons.Gutter.ReadAccess
 
-    override fun getTooltipText(): String {
-        val arrow = if (filter == UsageFilter.WRITE) "↓" else "↑"
-        return "Reatom ${node.kind} '${node.name}' · $arrow$count ${filter.noun}"
-    }
+    /** Маркеры объявлений выравниваются по левому краю gutter'а. */
+    override fun getAlignment(): Alignment = Alignment.LEFT
+
+    override fun getTooltipText(): String =
+        ReatomBundle.message(
+            if (filter == UsageFilter.WRITE) "gutter.tooltip.write" else "gutter.tooltip.read",
+            node.kind,
+            node.name,
+            count,
+        )
+
+    /** Имя иконки для скринридеров. */
+    override fun getAccessibleName(): String =
+        ReatomBundle.message(
+            if (filter == UsageFilter.WRITE) "gutter.accessibleName.write"
+            else "gutter.accessibleName.read",
+            node.kind,
+            node.name,
+        )
 
     override fun isNavigateAction(): Boolean = true
 

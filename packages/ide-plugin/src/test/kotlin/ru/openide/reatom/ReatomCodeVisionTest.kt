@@ -42,7 +42,7 @@ class ReatomCodeVisionTest : BasePlatformTestCase() {
         ReatomGraphService.getInstance(project)
             .setGraphForTesting(graphForCounter(path, start, start + "counter".length))
 
-        val entries = ReatomCodeVisionProvider().computeForEditor(myFixture.editor, Unit)
+        val entries = ReatomCodeVisionProvider().computeCodeVision(myFixture.editor, Unit).result
         assertEquals(1, entries.size)
         val (range, entry) = entries.first()
         assertEquals(start, range.startOffset)
@@ -71,6 +71,6 @@ class ReatomCodeVisionTest : BasePlatformTestCase() {
     fun testNoEntriesWhenGraphAbsent() {
         myFixture.configureByText("model.ts", "const counter = 0")
         ReatomGraphService.getInstance(project).setGraphForTesting(null)
-        assertEmpty(ReatomCodeVisionProvider().computeForEditor(myFixture.editor, Unit))
+        assertEmpty(ReatomCodeVisionProvider().computeCodeVision(myFixture.editor, Unit).result)
     }
 }

@@ -4,6 +4,7 @@ import com.intellij.codeInsight.hint.HintManager
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
@@ -14,6 +15,7 @@ import com.intellij.ui.ColoredListCellRenderer
 import com.intellij.ui.RowIcon
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.awt.RelativePoint
+import ru.openide.reatom.ReatomBundle
 import ru.openide.reatom.analyzer.ReatomGraphService
 import ru.openide.reatom.model.ReatomGraphEdge
 import ru.openide.reatom.model.ReatomGraphModel
@@ -28,18 +30,20 @@ import javax.swing.JList
 object ReatomNavigation {
 
     /** Какие использования показывать: все, только чтения или только записи. */
-    enum class UsageFilter(val noun: String) {
-        ALL("usages"),
-        READ("readers"),
-        WRITE("writers"),
+    enum class UsageFilter(private val edgeKind: String?, private val key: String) {
+        ALL(null, "usages"),
+        READ("read", "readers"),
+        WRITE("write", "writers"),
         ;
 
-        fun matches(edgeKind: String): Boolean =
-            when (this) {
-                ALL -> true
-                READ -> edgeKind == "read"
-                WRITE -> edgeKind == "write"
-            }
+        /** Подходит ли ребро под фильтр (`ALL` — любое). */
+        fun matches(kind: String): Boolean = edgeKind == null || edgeKind == kind
+
+        /** Заголовок попапа использований этого вида. */
+        fun title(name: String): String = ReatomBundle.message("navigation.title.$key", name)
+
+        /** Подсказка, когда использований этого вида нет. */
+        fun emptyHint(name: String): String = ReatomBundle.message("navigation.empty.$key", name)
     }
 
     /** Запись попапа — все использования на одной строке файла. */
@@ -96,7 +100,7 @@ object ReatomNavigation {
             .filter { filter.matches(it.kind) }
 
         if (edges.isEmpty()) {
-            HintManager.getInstance().showInformationHint(editor, "'$name' has no ${filter.noun}")
+            HintManager.getInstance().showInformationHint(editor, filter.emptyHint(name))
             return
         }
         val usages = groupByLine(edges)
@@ -104,11 +108,11 @@ object ReatomNavigation {
             navigate(project, usages.first())
             return
         }
-        val title = filter.noun.replaceFirstChar { it.uppercase() } + " of '$name'"
         val popup = JBPopupFactory.getInstance()
             .createPopupChooserBuilder(usages)
-            .setTitle(title)
+            .setTitle(filter.title(name))
             .setRenderer(UsageRenderer())
+            .setFont(EditorUtil.getEditorFont())
             .setItemChosenCallback { navigate(project, it) }
             .createPopup()
         // Якорим попап у объявления юнита — там, где gutter-иконка / Code Lens,

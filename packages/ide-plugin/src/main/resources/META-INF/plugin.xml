@@ -12,6 +12,8 @@
 
     <depends>com.intellij.modules.platform</depends>
 
+    <resource-bundle>messages.ReatomBundle</resource-bundle>
+
     <extensions defaultExtensionNs="com.intellij">
         <codeInsight.codeVisionProvider
                 implementation="ru.openide.reatom.codevision.ReatomCodeVisionProvider"/>
