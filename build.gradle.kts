@@ -1,6 +1,6 @@
-// Корневой проект-агрегатор монорепозитория. Каждый плагин собирается в своём
-// подпроекте:
-//   :ide-plugin — IntelliJ-плагин на Kotlin (Code Lens, gutter-иконки, навигация);
-//   :ts-plugin  — анализатор реактивного графа на TypeScript (npm через node-gradle).
+// Root aggregator project of the monorepo. Each plugin is built in its own
+// subproject:
+//   :ide-plugin — IntelliJ plugin in Kotlin (Code Lens, gutter icons, navigation);
+//   :ts-plugin  — reactive graph analyzer in TypeScript (npm via node-gradle).
 //
-// `./gradlew build` собирает и проверяет весь репозиторий.
+// `./gradlew build` builds and verifies the entire repository.

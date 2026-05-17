@@ -1,5 +1,5 @@
 # CLAUDE.md
 
-См. [AGENTS.md](AGENTS.md) — единый файл с описанием проекта, архитектуры и правил работы для агентов и контрибьюторов (формат [agents.md](https://agents.md/)).
+See [AGENTS.md](AGENTS.md) — a single file describing the project, its architecture and the working rules for agents and contributors (in the [agents.md](https://agents.md/) format).
 
-Весь содержательный контекст ведётся в `AGENTS.md`. Этот файл — только точка входа.
+All substantive context is kept in `AGENTS.md`. This file is just an entry point.

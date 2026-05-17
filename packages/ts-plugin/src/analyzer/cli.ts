@@ -19,14 +19,14 @@ import * as path from 'node:path';
 import { buildReatomGraph } from './graph';
 
 /**
- * One-shot CLI анализатора реактивного графа (фича 6).
+ * One-shot CLI of the reactive graph analyzer (feature 6).
  *
  *   node dist/analyzer/cli.js --project path/to/tsconfig.json
  *
- * Создаёт `Program` из `tsconfig.json`, строит модель графа и печатает её
- * JSON в stdout. Этот канал использует IDE-плагин (фичи 8/9, вариант 2a):
- * данные графа, которые нельзя протащить через LSP, берутся прямым запуском
- * анализатора отдельным Node-процессом.
+ * Creates a `Program` from `tsconfig.json`, builds the graph model and prints
+ * its JSON to stdout. The IDE plugin uses this channel (features 8/9, option
+ * 2a): graph data that cannot be passed through LSP is obtained by running the
+ * analyzer directly as a separate Node process.
  */
 
 interface CliOptions {
@@ -67,7 +67,7 @@ function main(): void {
   };
 
   const parsed = ts.getParsedCommandLineOfConfigFile(project, undefined, host);
-  if (!parsed) fail(`не удалось прочитать ${project}`);
+  if (!parsed) fail(`failed to read ${project}`);
 
   const program = ts.createProgram({
     rootNames: parsed.fileNames,

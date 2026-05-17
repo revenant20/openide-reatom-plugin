@@ -1,94 +1,94 @@
 # AGENTS.md
 
-Единый файл инструкций и контекста для агентов и контрибьюторов проекта **OpenIDE Reatom Plugin**. Формат — [agents.md](https://agents.md/).
+A single file of instructions and context for agents and contributors to the **OpenIDE Reatom Plugin** project. Format — [agents.md](https://agents.md/).
 
-## О проекте
+## About the project
 
-Поддержка реактивного менеджера состояний [Reatom v1001](https://v1001.reatom.dev) в OpenIDE и других редакторах: семантические инспекции, навигация по реактивному графу, сниппеты, визуализация зависимостей, quick-fixes.
+Support for the [Reatom v1001](https://v1001.reatom.dev) reactive state manager in OpenIDE and other editors: semantic inspections, reactive graph navigation, snippets, dependency visualization, quick-fixes.
 
-Ключевые решения:
+Key decisions:
 
-- Поддерживаем **только Reatom v1001**. Версия v3 вне скоупа, миграция v3 → v1001 — отдельный класс задач.
-- Продукт **бесплатный и открытый** (Free). Без лицензирования и Pro-фичей.
-- Основной таргет — OpenIDE, но TS-часть работает в любом редакторе с tsserver.
+- We support **only Reatom v1001**. Version v3 is out of scope; the v3 → v1001 migration is a separate class of tasks.
+- The product is **free and open** (Free). No licensing, no Pro features.
+- The primary target is OpenIDE, but the TS part works in any editor with tsserver.
 
-Полная концепция и состав фичей — [docs/features-reatom-plugin.md](docs/features-reatom-plugin.md).
+The full concept and the feature set — [docs/features-reatom-plugin.md](docs/features-reatom-plugin.md).
 
-## Структура репозитория — монорепозиторий из двух плагинов
+## Repository structure — a monorepo of two plugins
 
-Репозиторий содержит **два плагина**, которые разрабатываются и версионируются вместе:
+The repository contains **two plugins** that are developed and versioned together:
 
 ### 1. TypeScript plugin — `packages/ts-plugin`
 
-npm-пакет `@openide/reatom-ts-plugin` — плагин для `typescript-language-server` (tsserver). Загружается **внутрь tsserver-процесса**, имеет доступ к полному типизированному AST и Type Checker.
+The npm package `@openide/reatom-ts-plugin` — a plugin for `typescript-language-server` (tsserver). It is loaded **inside the tsserver process** and has access to the full typed AST and the Type Checker.
 
-Отвечает за всю **семантику**:
+It is responsible for all **semantics**:
 
-- диагностики (инспекции) — `.set` в `computed`, `await` без `wrap`, утечки `subscribe`, конфликты порядка `.extend(...)`, именование атомов;
+- diagnostics (inspections) — `.set` inside `computed`, `await` without `wrap`, `subscribe` leaks, `.extend(...)` ordering conflicts, atom naming;
 - code actions (quick-fixes / intentions);
-- completion, включая сниппеты в snippet-формате (аналог live templates);
+- completion, including snippets in snippet format (analogous to live templates);
 - hover / quick documentation.
 
-Всё это отдаётся клиенту по стандартному LSP-протоколу. Работает **кросс-редакторно**: OpenIDE, VS Code, WebStorm, Neovim, Helix, Zed — везде, где есть tsserver.
+All of this is delivered to the client over the standard LSP protocol. It works **cross-editor**: OpenIDE, VS Code, WebStorm, Neovim, Helix, Zed — anywhere tsserver is available.
 
-Code lens через TS plugin **недоступен** (нет метода в `ts.LanguageService`), категоризированный Find Usages — тоже (LSP `references` плоский). См. [docs/feature-2-code-lens.md](docs/feature-2-code-lens.md) и деление фич на класс A/B в концепции.
+Code Lens via the TS plugin is **not available** (there is no method for it in `ts.LanguageService`), and a categorized Find Usages is not available either (the LSP `references` result is flat). See [docs/feature-2-code-lens.md](docs/feature-2-code-lens.md) and the split of features into class A/B in the concept.
 
-Сейчас в `ts-plugin` реализован **анализатор реактивного графа** — переиспользуемое ядро (вне tsserver) на TypeScript Compiler API. Его самодостаточный бандл возит в себе IDE-плагин (фича 9); на том же ядре стоят CLI-визуализация и toolwindow. Семантика выше — пока план; inlay hints пробовали и убрали (дублировали Code Lens IDE-плагина).
+Currently the `ts-plugin` implements the **reactive graph analyzer** — a reusable core (outside tsserver) built on the TypeScript Compiler API. Its self-contained bundle ships inside the IDE plugin (feature 9); the CLI visualization and the toolwindow are built on the same core. The semantics above are still a plan; inlay hints were tried and removed (they duplicated the IDE plugin's Code Lens).
 
-Стек: TypeScript, TypeScript Compiler API.
+Stack: TypeScript, TypeScript Compiler API.
 
-### 2. IDE-плагин — `packages/ide-plugin`
+### 2. IDE plugin — `packages/ide-plugin`
 
-Плагин на платформе IntelliJ (OpenIDE / IntelliJ IDEA). Даёт то, что tsserver и LSP-протокол сделать **не могут** — нативные возможности IDE:
+A plugin on the IntelliJ platform (OpenIDE / IntelliJ IDEA). It provides what tsserver and the LSP protocol **cannot** do — native IDE capabilities:
 
-- **toolwindow** со статическим реактивным графом зависимостей атомов;
-- нативные **gutter-иконки** (line markers) на `atom` / `computed` / `action` / `effect`;
-- bundled **live templates** для JetBrains-формата;
-- страница настроек поддержки Reatom.
+- a **toolwindow** with a static reactive graph of atom dependencies;
+- native **gutter icons** (line markers) on `atom` / `computed` / `action` / `effect`;
+- bundled **live templates** in the JetBrains format;
+- a Reatom support settings page.
 
-Кроме того, IDE-плагин **возит в себе анализатор графа** — самодостаточный esbuild-бандл (наш код + TypeScript внутри одного `.cjs`) — и запускает его Node-процессом. Поэтому потребителю не нужен npm-пакет: достаточно зависимости `@reatom/core` в проекте. Доставка будущего LSP-слоя в tsserver — открытый вопрос (см. концепцию).
+In addition, the IDE plugin **ships the graph analyzer inside itself** — a self-contained esbuild bundle (our code plus TypeScript inside a single `.cjs`) — and runs it as a Node process. As a result, the consumer does not need the npm package: a `@reatom/core` dependency in the project is enough. Delivering a future LSP layer into tsserver is an open question (see the concept).
 
-Стек: Kotlin, Gradle, IntelliJ Platform SDK, Gradle IntelliJ Plugin.
+Stack: Kotlin, Gradle, IntelliJ Platform SDK, Gradle IntelliJ Plugin.
 
-### Разделение ответственности
+### Separation of responsibilities
 
-| Слой | TS plugin | IDE-плагин |
+| Layer | TS plugin | IDE plugin |
 |---|---|---|
-| Семантика (инспекции, quick-fix, completion, hover) | ✅ | — |
-| Кросс-редакторность | ✅ (любой tsserver) | ❌ (только IntelliJ-платформа) |
-| Toolwindow с графом, нативные gutter-иконки | ❌ | ✅ |
-| Доставка анализатора без npm-пакета у потребителя | — | ✅ |
+| Semantics (inspections, quick-fix, completion, hover) | ✅ | — |
+| Cross-editor support | ✅ (any tsserver) | ❌ (IntelliJ platform only) |
+| Toolwindow with the graph, native gutter icons | ❌ | ✅ |
+| Delivering the analyzer without an npm package on the consumer side | — | ✅ |
 
-Правило: всё, что можно сделать в TS plugin, делается в TS plugin (ради кросс-редакторности). IDE-плагин — только для нативных IDE-фич, которые принципиально невозможны через LSP.
+Rule: anything that can be done in the TS plugin is done in the TS plugin (for the sake of cross-editor support). The IDE plugin is only for native IDE features that are fundamentally impossible via LSP.
 
-## Структура каталогов
+## Directory layout
 
 ```
 openide-reatom-plugin/
-├── AGENTS.md                 # этот файл
-├── CLAUDE.md                 # точка входа, ведёт в AGENTS.md
+├── AGENTS.md                 # this file
+├── CLAUDE.md                 # entry point, points to AGENTS.md
 ├── README.md
 ├── docs/
-│   └── features-reatom-plugin.md   # полная концепция и состав фичей
+│   └── features-reatom-plugin.md   # full concept and feature set
 ├── packages/
 │   ├── ts-plugin/            # @openide/reatom-ts-plugin (TypeScript)
-│   └── ide-plugin/           # IDE-плагин (Kotlin / Gradle / IntelliJ SDK)
+│   └── ide-plugin/           # IDE plugin (Kotlin / Gradle / IntelliJ SDK)
 └── templates/                # live templates: reatom.xml, reatom.code-snippets
 ```
 
-> Статус: реализованы анализатор графа (фича 6) в `packages/ts-plugin` и нативные Code Lens / gutter-иконки / навигация (фича 9) в `packages/ide-plugin`. Inlay hints (фича 2) пробовали через TS LS-плагин, но убрали — дублировали Code Lens. Каталог `templates/` появится позже.
+> Status: the graph analyzer (feature 6) is implemented in `packages/ts-plugin`, and native Code Lens / gutter icons / navigation (feature 9) in `packages/ide-plugin`. Inlay hints (feature 2) were tried via the TS LS plugin but removed — they duplicated Code Lens. The `templates/` directory will appear later.
 
-## Правила работы
+## Working rules
 
-- Язык общения, документации и коммитов — **русский**.
-- Сообщения коммитов — в прошедшем времени (что сделал, а не что сделать).
-- Перед изменением состава фичей или архитектуры — сверяться с `docs/features-reatom-plugin.md` и обновлять его.
-- Не вводить Pro-фичи и лицензирование — продукт только Free.
-- Не добавлять поддержку Reatom v3.
+- The project language — documentation, code comments, and commits — is **English**.
+- Commit messages are in the past tense (what was done, not what to do).
+- Before changing the feature set or the architecture, check against `docs/features-reatom-plugin.md` and keep it up to date.
+- Do not introduce Pro features or licensing — the product is Free only.
+- Do not add Reatom v3 support.
 
-## Полезные ссылки
+## Useful links
 
-- Документация Reatom v1001: <https://v1001.reatom.dev>
-- Исходники Reatom: <https://github.com/artalar/reatom>
+- Reatom v1001 documentation: <https://v1001.reatom.dev>
+- Reatom sources: <https://github.com/artalar/reatom>
 - TypeScript Language Service Plugins: <https://github.com/microsoft/TypeScript/wiki/Writing-a-Language-Service-Plugin>
 - IntelliJ Platform SDK: <https://plugins.jetbrains.com/docs/intellij/>

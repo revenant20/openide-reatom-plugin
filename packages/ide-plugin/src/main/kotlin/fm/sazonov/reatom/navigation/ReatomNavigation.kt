@@ -40,31 +40,31 @@ import javax.swing.Icon
 import javax.swing.JList
 
 /**
- * Навигация по реактивным связям юнита — общая для Code Lens и gutter-иконок.
- * От объявления — к использованиям ([showUsages]); от использования — к
- * объявлению ([showDeclarations]). Одна цель — переход сразу, несколько —
- * через попап-список.
+ * Navigation over a unit's reactive relations — shared by Code Lens and gutter
+ * icons. From a declaration — to the usages ([showUsages]); from a usage — to
+ * the declaration ([showDeclarations]). A single target — navigate
+ * immediately, several — via a list popup.
  */
 object ReatomNavigation {
 
-    /** Какие использования показывать: все, только чтения или только записи. */
+    /** Which usages to show: all, reads only, or writes only. */
     enum class UsageFilter(private val edgeKind: String?, private val key: String) {
         ALL(null, "usages"),
         READ("read", "readers"),
         WRITE("write", "writers"),
         ;
 
-        /** Подходит ли ребро под фильтр (`ALL` — любое). */
+        /** Whether the edge matches the filter (`ALL` — any). */
         fun matches(kind: String): Boolean = edgeKind == null || edgeKind == kind
 
-        /** Заголовок попапа использований этого вида. */
+        /** The title of the usages popup of this kind. */
         fun title(name: String): String = ReatomBundle.message("navigation.title.$key", name)
 
-        /** Подсказка, когда использований этого вида нет. */
+        /** The hint shown when there are no usages of this kind. */
         fun emptyHint(name: String): String = ReatomBundle.message("navigation.empty.$key", name)
     }
 
-    /** Запись попапа использований — все использования на одной строке файла. */
+    /** A usages popup entry — all usages on a single file line. */
     private class Usage(
         val file: String,
         val offset: Int,
@@ -72,11 +72,11 @@ object ReatomNavigation {
         val code: String,
         val kinds: Set<String>,
     ) {
-        /** Для type-to-search в попапе — и по расположению, и по коду. */
+        /** For type-to-search in the popup — both by location and by code. */
         override fun toString(): String = "$location $code"
     }
 
-    /** Рендер строки попапа использований: иконка(и) видов связи + место + код. */
+    /** Renders a usages popup row: relation-kind icon(s) + location + code. */
     private class UsageRenderer : ColoredListCellRenderer<Usage>() {
         override fun customizeCellRenderer(
             list: JList<out Usage>,
@@ -94,12 +94,12 @@ object ReatomNavigation {
         }
     }
 
-    /** Запись попапа объявлений — один Reatom-юнит и место его инициализации. */
+    /** A declarations popup entry — one Reatom unit and its initialization site. */
     private class Declaration(val node: ReatomGraphNode, val location: String) {
         override fun toString(): String = "${node.name} ${node.kind} $location"
     }
 
-    /** Рендер строки попапа объявлений: имя юнита + его роль и расположение. */
+    /** Renders a declarations popup row: the unit name + its role and location. */
     private class DeclarationRenderer : ColoredListCellRenderer<Declaration>() {
         override fun customizeCellRenderer(
             list: JList<out Declaration>,
@@ -114,7 +114,7 @@ object ReatomNavigation {
         }
     }
 
-    /** Иконка строки: чтение, запись или обе — если на строке и read, и write. */
+    /** The row icon: read, write, or both — if the line has both read and write. */
     private fun iconFor(kinds: Set<String>): Icon {
         val read = "read" in kinds
         val write = "write" in kinds
@@ -126,9 +126,10 @@ object ReatomNavigation {
     }
 
     /**
-     * Показывает использования юнита `nodeId` с учётом `filter` и переходит к
-     * выбранному. `ALL` — все связи (клик по Code Lens), `READ`/`WRITE` —
-     * только чтения / записи (клик по соответствующей gutter-иконке).
+     * Shows the usages of unit `nodeId` according to `filter` and navigates to
+     * the selected one. `ALL` — all relations (a Code Lens click),
+     * `READ`/`WRITE` — reads / writes only (a click on the corresponding
+     * gutter icon).
      */
     fun showUsages(project: Project, editor: Editor, nodeId: String, filter: UsageFilter) {
         val graph = ReatomGraphService.getInstance(project).graph
@@ -153,8 +154,8 @@ object ReatomNavigation {
             .setFont(EditorUtil.getEditorFont())
             .setItemChosenCallback { navigate(project, it) }
             .createPopup()
-        // Якорим попап у объявления юнита — там, где gutter-иконка / Code Lens,
-        // по которым кликнули, а не у каретки редактора.
+        // Anchor the popup at the unit declaration — where the clicked gutter
+        // icon / Code Lens is, not at the editor caret.
         val offset = node?.range?.start
         if (offset != null && offset <= editor.document.textLength) {
             val xy = editor.visualPositionToXY(editor.offsetToVisualPosition(offset))
@@ -165,8 +166,9 @@ object ReatomNavigation {
     }
 
     /**
-     * Переходит к объявлению (инициализации) юнита по клику на usage-гаттере.
-     * Один юнит — сразу, несколько разных на строке — через попап выбора.
+     * Navigates to a unit declaration (initialization) on a click on a usage
+     * gutter icon. A single unit — immediately, several distinct ones on the
+     * line — via a chooser popup.
      */
     fun showDeclarations(project: Project, editor: Editor, unitIds: List<String>) {
         val graph = ReatomGraphService.getInstance(project).graph ?: return
@@ -188,19 +190,19 @@ object ReatomNavigation {
             .showInBestPositionFor(editor)
     }
 
-    /** Открывает файл записи и ставит курсор на использование. */
+    /** Opens the usage file and places the caret on the usage. */
     private fun navigate(project: Project, usage: Usage) {
         val file = LocalFileSystem.getInstance().findFileByPath(usage.file) ?: return
         OpenFileDescriptor(project, file, usage.offset).navigate(true)
     }
 
-    /** Открывает файл объявления и ставит курсор на инициализацию юнита. */
+    /** Opens the declaration file and places the caret on the unit initialization. */
     private fun navigateToDeclaration(project: Project, node: ReatomGraphNode) {
         val file = LocalFileSystem.getInstance().findFileByPath(node.file) ?: return
         OpenFileDescriptor(project, file, node.range.start).navigate(true)
     }
 
-    /** Расположение объявления юнита в виде `файл:строка`. */
+    /** The location of a unit declaration as `file:line`. */
     private fun locationOf(node: ReatomGraphNode): String {
         val fileName = LocalFileSystem.getInstance().findFileByPath(node.file)?.name
             ?: node.file.substringAfterLast('/')
@@ -210,8 +212,8 @@ object ReatomNavigation {
     }
 
     /**
-     * Группирует рёбра по строке файла: несколько использований на одной
-     * строке дают одну запись попапа.
+     * Groups edges by file line: several usages on the same line yield a
+     * single popup entry.
      */
     private fun groupByLine(edges: List<ReatomGraphEdge>): List<Usage> {
         val groups = LinkedHashMap<Pair<String, Int>, MutableList<ReatomGraphEdge>>()
@@ -245,7 +247,7 @@ object ReatomNavigation {
         return FileDocumentManager.getInstance().getDocument(file)
     }
 
-    /** Текст строки `line` без отступов. */
+    /** The text of line `line` without indentation. */
     private fun lineText(document: Document, line: Int): String =
         document
             .getText(TextRange(document.getLineStartOffset(line), document.getLineEndOffset(line)))

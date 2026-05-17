@@ -16,13 +16,13 @@
 
 import type * as ts from 'typescript';
 
-/** Фрагмент пути, по которому опознаётся файл из пакета `@reatom/*`. */
+/** Path fragment that identifies a file belonging to a `@reatom/*` package. */
 const REATOM_PATH_FRAGMENT = '/@reatom/';
 
 /**
- * Лежит ли символ в пакете `@reatom/*` — проверка по пути файла объявления.
- * Отсекает чужие одноимённые `atom` / `action` и т.п.: важно резолвить именно
- * символ, а не имя.
+ * Whether the symbol lives in a `@reatom/*` package — checked by the path of
+ * the declaration file. This filters out foreign same-named `atom` / `action`
+ * and the like: it is essential to resolve the symbol, not the name.
  */
 export function isReatomSymbol(symbol: ts.Symbol | undefined): boolean {
   const declarations = symbol?.declarations;

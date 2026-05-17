@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Останавливает песочницу IDE, запущенную start-sandbox.sh.
+# Stops the IDE sandbox started by start-sandbox.sh.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -8,13 +8,13 @@ PID_FILE="$PLUGIN_DIR/build/.sandbox-ide.pid"
 GRACEFUL_TIMEOUT=15
 
 if [[ ! -f "$PID_FILE" ]]; then
-    echo "Песочница не запущена (нет $PID_FILE)."
+    echo "Sandbox is not running (no $PID_FILE)."
     exit 0
 fi
 
 PID="$(cat "$PID_FILE")"
 if ! kill -0 "$PID" 2>/dev/null; then
-    echo "Процесс $PID не найден — удаляю устаревший pidfile."
+    echo "Process $PID not found — removing the stale pidfile."
     rm -f "$PID_FILE"
     exit 0
 fi
@@ -24,7 +24,7 @@ kill "$PID" 2>/dev/null || true
 waited=0
 while (( waited < GRACEFUL_TIMEOUT )); do
     if ! kill -0 "$PID" 2>/dev/null; then
-        echo "Остановлено штатно за ${waited}с."
+        echo "Stopped gracefully in ${waited}s."
         rm -f "$PID_FILE"
         exit 0
     fi
@@ -32,7 +32,7 @@ while (( waited < GRACEFUL_TIMEOUT )); do
     waited=$((waited + 1))
 done
 
-echo "Не остановилось за ${GRACEFUL_TIMEOUT}с — SIGKILL."
+echo "Did not stop within ${GRACEFUL_TIMEOUT}s — SIGKILL."
 kill -9 "$PID" 2>/dev/null || true
 rm -f "$PID_FILE"
-echo "Остановлено."
+echo "Stopped."

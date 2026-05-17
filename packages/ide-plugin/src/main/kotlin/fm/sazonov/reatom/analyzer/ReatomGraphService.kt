@@ -35,15 +35,16 @@ import fm.sazonov.reatom.model.GraphRange
 import fm.sazonov.reatom.model.ReatomGraph
 
 /**
- * Проектный сервис: хранит модель реактивного графа и умеет её перестраивать,
- * запуская анализатор `@openide/reatom-ts-plugin` отдельным Node-процессом
- * (вариант 2a гибридной архитектуры). Code Lens и gutter-иконки читают
- * модель отсюда.
+ * Project service: holds the reactive graph model and can rebuild it by
+ * running the `@openide/reatom-ts-plugin` analyzer in a separate Node process
+ * (variant 2a of the hybrid architecture). Code Lens and gutter icons read the
+ * model from here.
  *
- * При редактировании `.ts`/`.tsx`-файла offset'ы узлов в графе сразу
- * сдвигаются на дельту правки — Code Lens едет вместе с текстом, не дожидаясь
- * Node и без жёсткого сброса. Полный ре-анализ запускается в фоне после паузы:
- * он нужен лишь для структурных изменений (новые/удалённые юниты и связи).
+ * When a `.ts`/`.tsx` file is edited, the offsets of the graph nodes are
+ * immediately shifted by the edit delta — Code Lens moves together with the
+ * text, without waiting for Node and without a hard invalidation. A full
+ * re-analysis is scheduled in the background after a pause: it is only needed
+ * for structural changes (added/removed units and links).
  */
 @Service(Service.Level.PROJECT)
 class ReatomGraphService(private val project: Project) : Disposable {
@@ -56,10 +57,10 @@ class ReatomGraphService(private val project: Project) : Disposable {
     private var loading = false
     private var pendingReload = false
 
-    /** Дебаунсер ре-анализа: коалесцирует пачку правок в один запуск Node. */
+    /** Re-analysis debouncer: coalesces a batch of edits into one Node run. */
     private val reloadAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
 
-    /** Дебаунсер быстрого пересбора gutter-иконок после правок. */
+    /** Debouncer for the quick rebuild of gutter icons after edits. */
     private val gutterAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
 
     init {
@@ -78,9 +79,9 @@ class ReatomGraphService(private val project: Project) : Disposable {
     }
 
     /**
-     * Планирует ре-анализ после паузы в редактировании: сбрасывает прежний
-     * запрос и ставит новый. По срабатыванию сохраняет документы на диск
-     * (анализатор читает файлы с диска) и запускает Node.
+     * Schedules a re-analysis after a pause in editing: cancels the previous
+     * request and queues a new one. When it fires, saves the documents to disk
+     * (the analyzer reads files from disk) and launches Node.
      */
     fun scheduleReload() {
         reloadAlarm.cancelAllRequests()
@@ -94,11 +95,11 @@ class ReatomGraphService(private val project: Project) : Disposable {
     }
 
     /**
-     * Планирует быстрый пересбор gutter-иконок после короткой паузы в
-     * редактировании — отдельно от ре-анализа. Usage-иконки группируются по
-     * строкам, а строки сдвигаются при любой правке: группировку надо
-     * обновлять, даже когда граф структурно не менялся (и Node для этого не
-     * нужен — `shiftGraph` уже поправил offset'ы в памяти).
+     * Schedules a quick rebuild of gutter icons after a short pause in
+     * editing — separately from the re-analysis. Usage icons are grouped by
+     * line, and lines shift on any edit: the grouping must be refreshed even
+     * when the graph has not changed structurally (and Node is not needed for
+     * that — `shiftGraph` has already corrected the offsets in memory).
      */
     fun scheduleGutterRefresh() {
         gutterAlarm.cancelAllRequests()
@@ -109,10 +110,11 @@ class ReatomGraphService(private val project: Project) : Disposable {
     }
 
     /**
-     * Перестраивает граф в фоне. Результат применяется, только если за время
-     * анализа файлы не правились (иначе сдвинутый в памяти граф точнее —
-     * `built` отдаётся следующему прогону) и он отличается от текущего;
-     * по применению обновляет UI на EDT.
+     * Rebuilds the graph in the background. The result is applied only if the
+     * files were not edited during the analysis (otherwise the in-memory
+     * shifted graph is more accurate — `built` is handed to the next run) and
+     * it differs from the current one; once applied, it refreshes the UI on
+     * the EDT.
      */
     fun reloadAsync() {
         synchronized(lock) {
@@ -146,14 +148,14 @@ class ReatomGraphService(private val project: Project) : Disposable {
         }
     }
 
-    /** Для тестов: задать модель напрямую, минуя запуск Node. */
+    /** For tests: set the model directly, bypassing the Node launch. */
     fun setGraphForTesting(value: ReatomGraph?) {
         graph = value
     }
 
     override fun dispose() = Unit
 
-    /** Правка влияет на граф, если это `.ts`/`.tsx`-файл внутри проекта. */
+    /** An edit affects the graph if it is a `.ts`/`.tsx` file inside the project. */
     private fun affectsGraph(file: VirtualFile): Boolean {
         if (file.extension?.lowercase() !in TS_EXTENSIONS) return false
         val base = project.basePath ?: return false
@@ -161,8 +163,9 @@ class ReatomGraphService(private val project: Project) : Disposable {
     }
 
     /**
-     * Сдвигает offset'ы узлов и рёбер файла `path` на `delta` после позиции
-     * `at` — чтобы Code Lens сразу встал по месту, не дожидаясь ре-анализа.
+     * Shifts the offsets of nodes and edges in file `path` by `delta` after
+     * position `at` — so that Code Lens stays in place immediately, without
+     * waiting for the re-analysis.
      */
     private fun shiftGraph(path: String, at: Int, delta: Int) {
         if (delta == 0) return
@@ -188,8 +191,8 @@ class ReatomGraphService(private val project: Project) : Disposable {
     private fun runAnalyzer(): ReatomGraph? {
         val locations = ReatomAnalyzerLocator.locate(project) ?: run {
             thisLogger().info(
-                "Reatom: проект не использует Reatom либо не найдены node/CLI/tsconfig — " +
-                    "граф не построен",
+                "Reatom: the project does not use Reatom, or node/CLI/tsconfig were not " +
+                    "found — graph not built",
             )
             return null
         }
@@ -203,13 +206,13 @@ class ReatomGraphService(private val project: Project) : Disposable {
             val output = CapturingProcessHandler(commandLine).runProcess(ANALYZER_TIMEOUT_MS)
             if (output.exitCode != 0) {
                 thisLogger().warn(
-                    "Reatom: анализатор вернул код ${output.exitCode}: ${output.stderr}",
+                    "Reatom: analyzer returned code ${output.exitCode}: ${output.stderr}",
                 )
                 return null
             }
             Gson().fromJson(output.stdout, ReatomGraph::class.java)
         } catch (e: Exception) {
-            thisLogger().warn("Reatom: не удалось построить граф", e)
+            thisLogger().warn("Reatom: failed to build the graph", e)
             null
         }
     }

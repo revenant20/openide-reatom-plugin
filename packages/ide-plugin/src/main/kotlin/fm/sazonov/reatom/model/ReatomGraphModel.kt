@@ -16,7 +16,7 @@
 
 package fm.sazonov.reatom.model
 
-/** Сводка по узлу — то, что показывают Code Lens и тултип gutter-иконки. */
+/** A node summary — what Code Lens and the gutter icon tooltip show. */
 data class ReatomNodeSummary(
     val node: ReatomGraphNode,
     val readers: Int,
@@ -24,20 +24,20 @@ data class ReatomNodeSummary(
 )
 
 /**
- * Чистые операции над моделью графа: вычисление сводок и выборка узлов
- * по файлу. Без зависимостей от платформы — отсюда же тестируется.
+ * Pure operations on the graph model: computing summaries and selecting nodes
+ * by file. With no platform dependencies — and tested from here.
  */
 object ReatomGraphModel {
 
-    /** Узлы, объявленные в указанном файле (по абсолютному пути). */
+    /** The nodes declared in the given file (by absolute path). */
     fun nodesInFile(graph: ReatomGraph, filePath: String): List<ReatomGraphNode> =
         graph.nodes.filter { it.file == filePath }
 
-    /** Использования юнита — рёбра, ведущие в него (читатели и писатели). */
+    /** The usages of a unit — the edges leading into it (readers and writers). */
     fun usagesOf(graph: ReatomGraph, nodeId: String): List<ReatomGraphEdge> =
         graph.edges.filter { it.to == nodeId }
 
-    /** Сводка по каждому узлу: число читателей и писателей из рёбер графа. */
+    /** A summary for each node: the count of readers and writers from the graph edges. */
     fun summarize(graph: ReatomGraph): Map<String, ReatomNodeSummary> {
         val readers = HashMap<String, Int>()
         val writers = HashMap<String, Int>()
@@ -56,7 +56,7 @@ object ReatomGraphModel {
         }
     }
 
-    /** Текст Code Lens: `atom · ↑4 · ↓2 · ⤴withCache`. */
+    /** The Code Lens text: `atom · ↑4 · ↓2 · ⤴withCache`. */
     fun lensText(summary: ReatomNodeSummary): String {
         val parts = mutableListOf(
             summary.node.kind,

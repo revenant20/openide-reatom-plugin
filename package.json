@@ -2,7 +2,7 @@
   "name": "openide-reatom-plugin",
   "version": "0.0.0",
   "private": true,
-  "description": "Поддержка Reatom v1001 в OpenIDE и других редакторах",
+  "description": "Reatom v1001 support for OpenIDE and other editors",
   "license": "Apache-2.0",
   "author": "Fedor Sazonov <sazonovfm@gmail.com>",
   "workspaces": [

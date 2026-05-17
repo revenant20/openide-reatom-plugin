@@ -27,7 +27,7 @@ import fm.sazonov.reatom.model.ReatomGraph
 import fm.sazonov.reatom.model.ReatomGraphEdge
 import fm.sazonov.reatom.model.ReatomGraphNode
 
-/** Тесты рендеринга Code Lens и gutter-иконок по заданной модели графа. */
+/** Tests of Code Lens and gutter icon rendering against a given graph model. */
 class ReatomCodeVisionTest : BasePlatformTestCase() {
 
     private fun graphForCounter(filePath: String, start: Int, end: Int): ReatomGraph {
@@ -64,9 +64,9 @@ class ReatomCodeVisionTest : BasePlatformTestCase() {
         val (range, entry) = entries.first()
         assertEquals(start, range.startOffset)
         val lens = (entry as TextCodeVisionEntry).text
-        assertTrue("в подписи есть роль atom: $lens", lens.contains("atom"))
-        assertTrue("в подписи есть счётчики: $lens", lens.contains("↑1") && lens.contains("↓1"))
-        assertTrue("в подписи есть расширение: $lens", lens.contains("withCache"))
+        assertTrue("the label contains the atom role: $lens", lens.contains("atom"))
+        assertTrue("the label contains the counters: $lens", lens.contains("↑1") && lens.contains("↓1"))
+        assertTrue("the label contains the extension: $lens", lens.contains("withCache"))
     }
 
     fun testGutterIconsForReadAndWrite() {
@@ -80,7 +80,7 @@ class ReatomCodeVisionTest : BasePlatformTestCase() {
         ReatomGutterRenderer.refresh(myFixture.editor)
         val icons = myFixture.editor.markupModel.allHighlighters
             .mapNotNull { it.gutterIconRenderer?.icon }
-        // у counter есть и чтение, и запись — две разные gutter-иконки
+        // counter has both a read and a write — two distinct gutter icons
         assertEquals(2, icons.size)
         assertEquals(2, icons.toSet().size)
     }
@@ -113,9 +113,9 @@ class ReatomCodeVisionTest : BasePlatformTestCase() {
         ReatomGutterRenderer.refresh(myFixture.editor)
         val icons = myFixture.editor.markupModel.allHighlighters
             .mapNotNull { it.gutterIconRenderer?.icon }
-        // на строке использования — иконка перехода к объявлению
+        // on the usage line — a navigate-to-declaration icon
         assertTrue(
-            "ожидалась usage-иконка перехода к объявлению",
+            "expected a usage navigate-to-declaration icon",
             icons.contains(AllIcons.Gutter.OverridingMethod),
         )
     }

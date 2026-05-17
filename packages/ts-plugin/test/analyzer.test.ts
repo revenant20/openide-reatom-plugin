@@ -27,7 +27,7 @@ import { createProgram, cleanupFixtures, REATOM_CORE_DTS } from './helpers';
 afterAll(cleanupFixtures);
 
 describe('buildReatomGraph', () => {
-  it('собирает узлы atom / computed / action / effect', () => {
+  it('collects atom / computed / action / effect nodes', () => {
     const { program } = createProgram({
       'model.ts': `
         import { atom, computed, action, effect } from '@reatom/core';
@@ -47,7 +47,7 @@ describe('buildReatomGraph', () => {
     ]);
   });
 
-  it('строит рёбра read/write с привязкой from к объемлющему юниту', () => {
+  it('builds read/write edges with from bound to the enclosing unit', () => {
     const { program } = createProgram({
       'model.ts': `
         import { atom, computed } from '@reatom/core';
@@ -62,31 +62,31 @@ describe('buildReatomGraph', () => {
     const graph = buildReatomGraph(ts, program);
     const counter = graph.nodes.find((node) => node.name === 'counter');
     const doubled = graph.nodes.find((node) => node.name === 'doubled');
-    if (!counter || !doubled) throw new Error('узлы не найдены');
+    if (!counter || !doubled) throw new Error('nodes not found');
 
     const toCounter = graph.edges.filter((edge) => edge.to === counter.id);
-    // doubled читает counter, inc читает counter в аргументе set = 2 чтения.
+    // doubled reads counter, inc reads counter in the set argument = 2 reads.
     expect(toCounter.filter((edge) => edge.kind === 'read')).toHaveLength(2);
     expect(toCounter.filter((edge) => edge.kind === 'write')).toHaveLength(1);
 
-    // Чтение counter внутри computed размечено как исходящее из doubled.
+    // The counter read inside computed is marked as originating from doubled.
     const readInDoubled = toCounter.find((edge) => edge.from === doubled.id);
     expect(readInDoubled?.kind).toBe('read');
   });
 
-  it('узел несёт extensions и точный диапазон объявления', () => {
+  it('a node carries extensions and the exact declaration range', () => {
     const source =
       `import { atom, withCache } from '@reatom/core';\n` +
       `export const data = atom(0, 'data').extend(withCache());`;
     const { program } = createProgram({ 'model.ts': source });
     const node = buildReatomGraph(ts, program).nodes.find((n) => n.name === 'data');
-    if (!node) throw new Error('узел data не найден');
+    if (!node) throw new Error('node data not found');
     expect(node.extensions).toEqual(['withCache']);
     expect(source.slice(node.range.start, node.range.end)).toBe('data');
   });
 });
 
-describe('CLI анализатора', () => {
+describe('analyzer CLI', () => {
   let projectDir: string;
 
   beforeAll(() => {
@@ -120,7 +120,7 @@ describe('CLI анализатора', () => {
     fs.rmSync(projectDir, { recursive: true, force: true });
   });
 
-  it('node cli.js --project tsconfig.json печатает JSON-граф', () => {
+  it('node cli.js --project tsconfig.json prints the JSON graph', () => {
     const cli = path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
       '..',

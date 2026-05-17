@@ -16,19 +16,19 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        // Платформа IntelliJ IDEA 2025.3 (build 253) — таргет OpenIDE/IDEA.
-        // Артефакт idea:idea — тот же, что у соседнего php-plugin.
+        // IntelliJ IDEA 2025.3 platform (build 253) — the OpenIDE/IDEA target.
+        // The idea:idea artifact is the same one used by the neighboring php-plugin.
         intellijIdea("2025.3")
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
 
-        // Платформенный MCP Server — инфраструктура MCP в IDE.
+        // The platform MCP Server — the MCP infrastructure inside the IDE.
         bundledPlugin("com.intellij.mcpServer")
 
-        // MCP Steroid — ставится в песочницу как localPlugin из локальной
-        // сборки mcp-steroid (тем же механизмом, что в openide-mcp). Даёт
-        // AI-агенту полный контроль IDE. Путь переопределяется -PmcpSteroidJar=...
-        // Подключается, только если ZIP собран — иначе buildPlugin/test
-        // работают без него.
+        // MCP Steroid — installed into the sandbox as a localPlugin from a
+        // local mcp-steroid build (the same mechanism as in openide-mcp). It
+        // gives the AI agent full control of the IDE. The path is overridden
+        // via -PmcpSteroidJar=... It is included only if the ZIP has been
+        // built — otherwise buildPlugin/test work without it.
         val mcpSteroidZip = providers.gradleProperty("mcpSteroidJar").orNull?.let(::file)
             ?: fileTree("${rootProject.projectDir}/../mcp-steroid/ij-plugin/build/distributions") {
                 include("mcp-steroid-*.zip")
@@ -36,7 +36,7 @@ dependencies {
         if (mcpSteroidZip?.isFile == true) {
             localPlugin(mcpSteroidZip.absolutePath)
         } else {
-            logger.lifecycle("[reatom-ide-plugin] MCP Steroid ZIP не найден — песочница без MCP Steroid.")
+            logger.lifecycle("[reatom-ide-plugin] MCP Steroid ZIP not found — sandbox without MCP Steroid.")
         }
     }
     testImplementation("junit:junit:4.13.2")
@@ -56,14 +56,15 @@ tasks {
         sourceCompatibility = "21"
         targetCompatibility = "21"
     }
-    // Индексация searchable options поднимает headless-IDE и не нужна плагину.
+    // Indexing searchable options spins up a headless IDE and is not needed by the plugin.
     buildSearchableOptions {
         enabled = false
     }
 
-    // Самодостаточный бандл анализатора (наш код + TypeScript внутри) едет
-    // ресурсом внутри плагина — потребителю не нужен npm-пакет
-    // @openide/reatom-ts-plugin. Бандл собирает подпроект :ts-plugin.
+    // The self-contained analyzer bundle (our code + TypeScript inside) ships
+    // as a resource inside the plugin — the consumer does not need the
+    // @openide/reatom-ts-plugin npm package. The bundle is built by the
+    // :ts-plugin subproject.
     processResources {
         dependsOn(":ts-plugin:buildAnalyzer")
         from(rootProject.file("packages/ts-plugin/dist/analyzer/reatom-analyzer.cjs")) {
@@ -72,7 +73,7 @@ tasks {
     }
 }
 
-// Песочница авто-открывает переданный проект — доверяем ему без диалога.
+// The sandbox auto-opens the passed project — trust it without a dialog.
 tasks.named<org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask>("runIde") {
     jvmArgumentProviders.add(CommandLineArgumentProvider {
         listOf("-Didea.trust.all.projects=true")

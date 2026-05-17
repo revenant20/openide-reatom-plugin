@@ -20,9 +20,9 @@ import * as path from 'node:path';
 import * as ts from 'typescript';
 
 /**
- * Минимальный `@reatom/core` для герметичных фикстур: тайпчекер должен
- * резолвить `atom`/`computed`/… в файл под `@reatom/`, иначе детекция роли
- * (она идёт по символу, не по имени) их не примет.
+ * A minimal `@reatom/core` for hermetic fixtures: the TypeChecker must
+ * resolve `atom`/`computed`/… to a file under `@reatom/`, otherwise role
+ * detection (which goes by symbol, not by name) won't accept them.
  */
 // language=TypeScript
 export const REATOM_CORE_DTS = `
@@ -58,7 +58,7 @@ const COMPILER_OPTIONS: ts.CompilerOptions = {
 
 const createdDirs: string[] = [];
 
-/** Раскладывает фикстуры во временный каталог с фейковым `@reatom/core`. */
+/** Lays out the fixtures into a temporary directory with a fake `@reatom/core`. */
 function materialize(files: Record<string, string>): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'reatom-tsplugin-'));
   createdDirs.push(dir);
@@ -82,14 +82,14 @@ function projectScriptNames(dir: string, files: Record<string, string>): string[
     .map((relative) => path.join(dir, relative));
 }
 
-/** Проект-фикстура: `ts.Program` плюс резолвер абсолютных путей. */
+/** A project fixture: a `ts.Program` plus an absolute-path resolver. */
 export interface ProgramFixture {
   program: ts.Program;
-  /** Абсолютный путь файла фикстуры по относительному имени. */
+  /** Absolute path of a fixture file by its relative name. */
   file: (relative: string) => string;
 }
 
-/** Собирает `ts.Program` из набора фикстур `{ 'model.ts': '…' }`. */
+/** Builds a `ts.Program` from a set of fixtures `{ 'model.ts': '…' }`. */
 export function createProgram(files: Record<string, string>): ProgramFixture {
   const dir = materialize(files);
   const program = ts.createProgram({
@@ -99,13 +99,13 @@ export function createProgram(files: Record<string, string>): ProgramFixture {
   return { program, file: (relative) => path.join(dir, relative) };
 }
 
-/** Проект-фикстура поверх `LanguageService` — для теста плагина целиком. */
+/** A project fixture on top of `LanguageService` — for testing the plugin as a whole. */
 export interface LanguageServiceFixture {
   service: ts.LanguageService;
   file: (relative: string) => string;
 }
 
-/** Собирает `ts.LanguageService` из набора фикстур. */
+/** Builds a `ts.LanguageService` from a set of fixtures. */
 export function createLanguageService(
   files: Record<string, string>,
 ): LanguageServiceFixture {
@@ -133,13 +133,13 @@ export function createLanguageService(
   };
 }
 
-/** Полный диапазон файла — для `provideInlayHints`. */
+/** The full range of a file — for `provideInlayHints`. */
 export function fullSpan(program: ts.Program, fileName: string): ts.TextSpan {
   const sourceFile = program.getSourceFile(fileName);
   return { start: 0, length: sourceFile ? sourceFile.text.length : 0 };
 }
 
-/** Удаляет временные каталоги фикстур. Вызывать в `afterAll`. */
+/** Removes the temporary fixture directories. Call in `afterAll`. */
 export function cleanupFixtures(): void {
   for (const dir of createdDirs.splice(0)) {
     fs.rmSync(dir, { recursive: true, force: true });

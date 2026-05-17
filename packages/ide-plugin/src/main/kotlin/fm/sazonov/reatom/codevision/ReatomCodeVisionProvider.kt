@@ -31,9 +31,9 @@ import fm.sazonov.reatom.model.ReatomGraphModel
 import fm.sazonov.reatom.navigation.ReatomNavigation
 
 /**
- * Нативный Code Lens платформы IntelliJ: кликабельная строка-сводка над
- * объявлениями `atom` / `computed` / `action` / `effect`. Работает по
- * offset'ам модели графа, без PSI (TS-PSI в OpenIDE нет).
+ * Native IntelliJ-platform Code Lens: a clickable summary line above
+ * `atom` / `computed` / `action` / `effect` declarations. Works on the offsets
+ * of the graph model, without PSI (there is no TS-PSI in OpenIDE).
  */
 class ReatomCodeVisionProvider : CodeVisionProvider<Unit> {
 
@@ -45,9 +45,9 @@ class ReatomCodeVisionProvider : CodeVisionProvider<Unit> {
     override fun precomputeOnUiThread(editor: Editor) = Unit
 
     /**
-     * Считает Code Lens-записи по модели графа (на фоновом потоке).
-     * `computeForEditor` платформой объявлен deprecated/scheduled-for-removal —
-     * используем актуальный `computeCodeVision`.
+     * Computes Code Lens entries from the graph model (on a background thread).
+     * `computeForEditor` is declared deprecated/scheduled-for-removal by the
+     * platform — we use the current `computeCodeVision`.
      */
     override fun computeCodeVision(editor: Editor, uiData: Unit): CodeVisionState {
         val project = editor.project ?: return CodeVisionState.READY_EMPTY
@@ -65,8 +65,9 @@ class ReatomCodeVisionProvider : CodeVisionProvider<Unit> {
             if (start < 0 || end > documentLength || start >= end) continue
             val summary = summaries[node.id] ?: continue
             val nodeId = node.id
-            // ClickableTextCodeVisionEntry несёт обработчик клика сам —
-            // отдельный handleClick не нужен. PSI в обработчик не захватываем.
+            // ClickableTextCodeVisionEntry carries the click handler itself —
+            // a separate handleClick is not needed. We do not capture PSI in
+            // the handler.
             val entry = ClickableTextCodeVisionEntry(
                 text = ReatomGraphModel.lensText(summary),
                 providerId = ID,

@@ -25,9 +25,9 @@ import org.jetbrains.annotations.PropertyKey
 private const val BUNDLE = "messages.ReatomBundle"
 
 /**
- * Доступ к локализуемым строкам плагина из `messages/ReatomBundle.properties`.
- * Делегирует в [DynamicBundle] через композицию — наследоваться от него
- * платформа не велит.
+ * Access to the plugin's localizable strings from `messages/ReatomBundle.properties`.
+ * Delegates to [DynamicBundle] via composition — the platform discourages
+ * inheriting from it.
  */
 object ReatomBundle {
 

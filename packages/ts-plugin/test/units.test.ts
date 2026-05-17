@@ -21,16 +21,16 @@ import { createProgram, cleanupFixtures } from './helpers';
 
 afterAll(cleanupFixtures);
 
-/** Находит юниты в указанном файле фикстуры. */
+/** Finds units in the given fixture file. */
 function unitsOf(files: Record<string, string>, relative = 'model.ts') {
   const { program, file } = createProgram(files);
   const sourceFile = program.getSourceFile(file(relative));
-  if (!sourceFile) throw new Error('фикстура не найдена: ' + relative);
+  if (!sourceFile) throw new Error('fixture not found: ' + relative);
   return findReatomUnits(ts, program.getTypeChecker(), sourceFile);
 }
 
 describe('findReatomUnits', () => {
-  it('распознаёт роль atom / computed / action / effect', () => {
+  it('recognizes the atom / computed / action / effect role', () => {
     const units = unitsOf({
       'model.ts': `
         import { atom, computed, action, effect } from '@reatom/core';
@@ -48,7 +48,7 @@ describe('findReatomUnits', () => {
     ]);
   });
 
-  it('не считает юнитом чужую одноимённую функцию atom', () => {
+  it('does not treat an unrelated function named atom as a unit', () => {
     const units = unitsOf({
       'model.ts': `
         function atom(value: number) { return value; }
@@ -58,7 +58,7 @@ describe('findReatomUnits', () => {
     expect(units).toEqual([]);
   });
 
-  it('понимает алиас импорта', () => {
+  it('understands an import alias', () => {
     const units = unitsOf({
       'model.ts': `
         import { atom as makeAtom } from '@reatom/core';
@@ -68,7 +68,7 @@ describe('findReatomUnits', () => {
     expect(units.map((u) => [u.name, u.kind])).toEqual([['counter', 'atom']]);
   });
 
-  it('собирает with*-расширения из .extend(...)', () => {
+  it('collects with* extensions from .extend(...)', () => {
     const units = unitsOf({
       'model.ts': `
         import { atom, withAsync, withCache } from '@reatom/core';

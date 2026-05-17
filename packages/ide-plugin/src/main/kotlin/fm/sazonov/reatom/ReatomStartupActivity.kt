@@ -20,7 +20,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import fm.sazonov.reatom.analyzer.ReatomGraphService
 
-/** На открытие проекта строит реактивный граф в фоне. */
+/** Builds the reactive graph in the background when a project opens. */
 class ReatomStartupActivity : ProjectActivity {
 
     override suspend fun execute(project: Project) {

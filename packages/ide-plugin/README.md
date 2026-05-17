@@ -1,74 +1,75 @@
 # reatom-ide-plugin
 
-IDE-плагин на платформе IntelliJ (Kotlin) — нативная часть поддержки Reatom
-для OpenIDE / IntelliJ IDEA. Реализует **фичу 9** из
-[концепции](../../docs/features-reatom-plugin.md):
+An IDE plugin on the IntelliJ platform (Kotlin) — the native part of Reatom
+support for OpenIDE / IntelliJ IDEA. It implements **feature 9** from the
+[concept](../../docs/features-reatom-plugin.md):
 
-- **Code Lens** — кликабельная строка-сводка `atom · ↑N · ↓M · ⤴with*` над
-  объявлениями `atom` / `computed` / `action` / `effect`
+- **Code Lens** — a clickable summary line `atom · ↑N · ↓M · ⤴with*` above
+  `atom` / `computed` / `action` / `effect` declarations
   (`com.intellij.codeInsight.codeVisionProvider`);
-- **gutter-иконки** на тех же строках с тултипом-сводкой реактивных связей
-  (markup-модель редактора — не `LineMarkerProvider`, тот PSI-зависим, а
-  TS-PSI в OpenIDE нет).
+- **gutter icons** on the same lines with a tooltip summary of reactive
+  connections (the editor markup model — not `LineMarkerProvider`, which is
+  PSI-dependent, and there is no TS PSI in OpenIDE).
 
-Данные берутся из статического реактивного графа: плагин запускает анализатор
-`@openide/reatom-ts-plugin` (фича 6) отдельным Node-процессом и читает
-JSON-модель (вариант 2a гибридной архитектуры).
+The data comes from the static reactive graph: the plugin runs the
+`@openide/reatom-ts-plugin` analyzer (feature 6) as a separate Node process
+and reads the JSON model (variant 2a of the hybrid architecture).
 
-## Архитектура
+## Architecture
 
-| Компонент | Роль |
+| Component | Role |
 |---|---|
-| `model/` | модель графа (узлы/рёбра) + чистые операции (сводки, подписи) |
-| `analyzer/ReatomAnalyzerLocator` | находит `node`, CLI анализатора, `tsconfig.json` |
-| `analyzer/ReatomGraphService` | проектный сервис: запускает анализатор, хранит граф |
-| `codevision/ReatomCodeVisionProvider` | Code Lens по offset'ам графа |
-| `gutter/ReatomGutterRenderer` | gutter-иконки через `RangeHighlighter` |
+| `model/` | graph model (nodes/edges) + pure operations (summaries, signatures) |
+| `analyzer/ReatomAnalyzerLocator` | locates `node`, the analyzer CLI, and `tsconfig.json` |
+| `analyzer/ReatomGraphService` | a project service: runs the analyzer, holds the graph |
+| `codevision/ReatomCodeVisionProvider` | Code Lens by graph offsets |
+| `gutter/ReatomGutterRenderer` | gutter icons via `RangeHighlighter` |
 
-## Сборка и проверка
+## Building and verifying
 
-Требуется **JDK 21** (укажите путь к нему в `JAVA_HOME`). Репозиторий — единый
-Gradle multi-project, сборка идёт **из корня**:
+**JDK 21** is required (point `JAVA_HOME` at it). The repository is a single
+Gradle multi-project; the build runs **from the root**:
 
 ```bash
-# дистрибутив плагина → packages/ide-plugin/build/distributions/reatom-ide-plugin-*.zip
+# plugin distribution → packages/ide-plugin/build/distributions/reatom-ide-plugin-*.zip
 ./gradlew :ide-plugin:buildPlugin
 
-# тесты IDE-плагина (модель + рендеринг Code Lens / gutter на BasePlatformTestCase)
+# IDE plugin tests (model + Code Lens / gutter rendering on BasePlatformTestCase)
 ./gradlew :ide-plugin:test
 
-# собрать и проверить весь репозиторий — :ide-plugin и анализатор :ts-plugin
+# build and verify the whole repository — :ide-plugin and the :ts-plugin analyzer
 ./gradlew build
 ```
 
-`:ide-plugin:buildPlugin` сам соберёт бандл анализатора из подпроекта `:ts-plugin`.
-Платформа IntelliJ IDEA 2025.3 (build 253) скачивается Gradle автоматически.
+`:ide-plugin:buildPlugin` builds the analyzer bundle from the `:ts-plugin` subproject itself.
+The IntelliJ IDEA 2025.3 platform (build 253) is downloaded by Gradle automatically.
 
-## Песочница
+## Sandbox
 
-`./scripts/start-sandbox.sh [путь-к-проекту]` поднимает песочницу IDE с
-плагином (по умолчанию открывает `../../../reatom-playground`),
-`./scripts/stop-sandbox.sh` — останавливает.
+`./scripts/start-sandbox.sh [path-to-project]` brings up an IDE sandbox with
+the plugin (by default it opens `../../../reatom-playground`);
+`./scripts/stop-sandbox.sh` stops it.
 
-В сборку песочницы через `localPlugin` подключён **MCP Steroid** — берётся
-из локальной сборки `../../../mcp-steroid/ij-plugin/build/distributions/`
-(путь переопределяется `-PmcpSteroidJar=...`). Так в песочнице, помимо
-reatom-ide-plugin, доступно AI-управление IDE. Если ZIP MCP Steroid не
-собран — песочница поднимается без него, `buildPlugin`/`test` не страдают.
-Механизм взят из `openide-mcp` как образец; зависимости от самого
-`openide-mcp` нет.
+The sandbox build includes **MCP Steroid** via `localPlugin` — it is taken
+from the local build at `../../../mcp-steroid/ij-plugin/build/distributions/`
+(the path is overridden with `-PmcpSteroidJar=...`). This way, in addition to
+reatom-ide-plugin, AI-driven IDE control is available in the sandbox. If the
+MCP Steroid ZIP is not built, the sandbox comes up without it, and
+`buildPlugin`/`test` are unaffected. The mechanism is borrowed from
+`openide-mcp` as a template; there is no dependency on `openide-mcp` itself.
 
-## Встроенный анализатор
+## Built-in analyzer
 
-Плагин **возит анализатор в себе** — потребителю не нужен npm-пакет
-`@openide/reatom-ts-plugin`. Подпроект `:ts-plugin` собирает анализатор в один
-самодостаточный `.cjs` (наш код + TypeScript внутри, esbuild); `processResources`
-IDE-плагина зависит от таски `:ts-plugin:buildAnalyzer` и кладёт бандл ресурсом
-в jar (`analyzer/reatom-analyzer.cjs`), а `ReatomAnalyzerLocator` распаковывает
-его в системный каталог IDE и запускает `node` на нём.
+The plugin **ships the analyzer inside itself** — the consumer does not need
+the `@openide/reatom-ts-plugin` npm package. The `:ts-plugin` subproject
+builds the analyzer into a single self-contained `.cjs` (our code plus
+TypeScript inside, esbuild); the IDE plugin's `processResources` depends on
+the `:ts-plugin:buildAnalyzer` task and puts the bundle into the jar as a
+resource (`analyzer/reatom-analyzer.cjs`), while `ReatomAnalyzerLocator`
+extracts it into the IDE system directory and runs `node` on it.
 
-Отдельно собирать `ts-plugin` не нужно — `:ide-plugin:buildPlugin` тянет
-`:ts-plugin:buildAnalyzer` сам.
+There is no need to build `ts-plugin` separately — `:ide-plugin:buildPlugin`
+pulls in `:ts-plugin:buildAnalyzer` itself.
 
-Анализатор запускается только если проект **реально использует Reatom** —
-зависит от `@reatom/core` (см. `ReatomAnalyzerLocator.usesReatom`).
+The analyzer runs only if the project **actually uses Reatom** — that is, it
+depends on `@reatom/core` (see `ReatomAnalyzerLocator.usesReatom`).

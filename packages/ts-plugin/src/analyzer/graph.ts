@@ -17,60 +17,60 @@
 import type * as ts from 'typescript';
 import { findReatomUnits, ReatomUnitKind } from '../units';
 
-/** Версия схемы модели графа — контракт для потребителей (CLI, IDE-плагин). */
+/** Schema version of the graph model — a contract for consumers (CLI, IDE plugin). */
 export const GRAPH_SCHEMA_VERSION = 1;
 
-/** Диапазон в файле — offset'ы, потребитель сам конвертирует в строки/колонки. */
+/** Range in a file — offsets; the consumer converts them to lines/columns itself. */
 export interface GraphRange {
   start: number;
   end: number;
 }
 
-/** Узел графа — объявление Reatom-юнита. */
+/** Graph node — a Reatom unit declaration. */
 export interface ReatomGraphNode {
-  /** Стабильный id: `${file}:${name}`. */
+  /** Stable id: `${file}:${name}`. */
   id: string;
   kind: ReatomUnitKind;
   name: string;
-  /** Абсолютный путь файла объявления. */
+  /** Absolute path of the declaration file. */
   file: string;
-  /** Диапазон идентификатора объявления. */
+  /** Range of the declaration identifier. */
   range: GraphRange;
-  /** Применённые `with*`-расширения. */
+  /** Applied `with*` extensions. */
   extensions: string[];
 }
 
-/** Тип реактивной связи. */
+/** Kind of a reactive relation. */
 export type ReatomEdgeKind = 'read' | 'write' | 'extend';
 
-/** Ребро графа — одно использование юнита. */
+/** Graph edge — a single usage of a unit. */
 export interface ReatomGraphEdge {
-  /** id юнита, который используют. */
+  /** id of the unit being used. */
   to: string;
-  /** id объемлющего юнита, если использование лексически внутри него. */
+  /** id of the enclosing unit, if the usage is lexically inside one. */
   from?: string;
   kind: ReatomEdgeKind;
-  /** Абсолютный путь файла, где использование. */
+  /** Absolute path of the file where the usage occurs. */
   file: string;
-  /** Диапазон самого использования. */
+  /** Range of the usage itself. */
   range: GraphRange;
 }
 
-/** Модель реактивного графа — versioned JSON, выход анализатора. */
+/** Reactive graph model — versioned JSON, the analyzer output. */
 export interface ReatomGraph {
   schemaVersion: number;
   nodes: ReatomGraphNode[];
   edges: ReatomGraphEdge[];
 }
 
-/** Файл проекта — не `node_modules` и не `.d.ts`. */
+/** A project file — not `node_modules` and not `.d.ts`. */
 function isProjectFile(sourceFile: ts.SourceFile): boolean {
   return (
     !sourceFile.isDeclarationFile && !sourceFile.fileName.includes('/node_modules/')
   );
 }
 
-/** Объемлющий юнит идентификатора: ближайший предок-объявление из набора. */
+/** Enclosing unit of an identifier: the nearest ancestor declaration from the set. */
 function enclosingUnit(
   tsm: typeof ts,
   id: ts.Identifier,
@@ -85,7 +85,7 @@ function enclosingUnit(
   return undefined;
 }
 
-/** Классифицирует использование идентификатора как ребро графа. */
+/** Classifies an identifier usage as a graph edge. */
 function classifyEdge(
   tsm: typeof ts,
   checker: ts.TypeChecker,
@@ -114,7 +114,7 @@ function classifyEdge(
     try {
       symbol = checker.getAliasedSymbol(symbol);
     } catch {
-      /* незавершённый alias */
+      /* incomplete alias */
     }
   }
 
@@ -143,14 +143,14 @@ function classifyEdge(
 }
 
 /**
- * Строит модель реактивного графа по готовой `Program`. Чистая функция —
- * фундамент слоя 2 (CLI-визуализация, toolwindow, нативный Code Lens).
+ * Builds the reactive graph model from a ready `Program`. A pure function —
+ * the foundation of layer 2 (CLI visualization, toolwindow, native Code Lens).
  */
 export function buildReatomGraph(tsm: typeof ts, program: ts.Program): ReatomGraph {
   const checker = program.getTypeChecker();
   const projectFiles = program.getSourceFiles().filter(isProjectFile);
 
-  // Шаг 1 — узлы: объявления юнитов по всем файлам проекта.
+  // Step 1 — nodes: unit declarations across all project files.
   const nodes: ReatomGraphNode[] = [];
   const nodeByDeclaration = new Map<ts.VariableDeclaration, ReatomGraphNode>();
   for (const sourceFile of projectFiles) {
@@ -169,7 +169,7 @@ export function buildReatomGraph(tsm: typeof ts, program: ts.Program): ReatomGra
     }
   }
 
-  // Шаг 2 — рёбра: один проход по идентификаторам всех файлов проекта.
+  // Step 2 — edges: a single pass over identifiers in all project files.
   const edges: ReatomGraphEdge[] = [];
   if (nodeByDeclaration.size > 0) {
     for (const sourceFile of projectFiles) {

@@ -23,8 +23,9 @@ import com.intellij.openapi.vfs.VirtualFile
 import fm.sazonov.reatom.analyzer.ReatomGraphService
 
 /**
- * На открытие файла: если граф ещё не построен — запускает анализатор
- * (по завершении он сам обновит все редакторы), иначе сразу ставит иконки.
+ * On file open: if the graph is not built yet — runs the analyzer (once
+ * finished, it refreshes all editors itself), otherwise places the icons
+ * right away.
  */
 class ReatomFileEditorListener : FileEditorManagerListener {
 

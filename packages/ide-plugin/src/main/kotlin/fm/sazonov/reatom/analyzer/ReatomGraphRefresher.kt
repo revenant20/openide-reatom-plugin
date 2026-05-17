@@ -25,26 +25,26 @@ import com.intellij.openapi.project.Project
 import fm.sazonov.reatom.codevision.ReatomCodeVisionProvider
 import fm.sazonov.reatom.gutter.ReatomGutterRenderer
 
-/** Обновляет UI после перестройки графа: gutter-иконки и Code Lens. */
+/** Refreshes the UI after the graph is rebuilt: gutter icons and Code Lens. */
 object ReatomGraphRefresher {
 
-    /** Обновляет gutter-иконки и Code Lens. Должно вызываться на EDT. */
+    /** Refreshes gutter icons and Code Lens. Must be called on the EDT. */
     fun refreshAll(project: Project) {
         refreshGutters(project)
-        // Code Lens кэшируется по провайдеру и НЕ обновляется перезапуском
-        // демона подсветки — иначе после правки файла инлеи остаются на
-        // прежних offset'ах и съезжают с объявлений. Объявляем провайдер
-        // невалидным явно — платформа пересчитает `computeForEditor`.
+        // Code Lens is cached per provider and is NOT updated by restarting the
+        // highlighting daemon — otherwise, after a file edit, inlays stay at
+        // their previous offsets and drift away from declarations. We invalidate
+        // the provider explicitly — the platform recomputes `computeForEditor`.
         project.service<CodeVisionHost>().invalidateProvider(
             CodeVisionHost.LensInvalidateSignal(null, listOf(ReatomCodeVisionProvider.ID)),
         )
     }
 
     /**
-     * Пересобирает только gutter-иконки — без сброса Code Lens. Вызывается
-     * часто, после правок: usage-иконки группируются по строкам, а строки
-     * сдвигаются при любом редактировании, даже когда структура графа та же
-     * (разбил строку на три — иконок должно стать три). Должно вызываться на EDT.
+     * Rebuilds only the gutter icons — without invalidating Code Lens. Called
+     * frequently, after edits: usage icons are grouped by line, and lines shift
+     * on any edit, even when the graph structure is the same (split a line into
+     * three — there should now be three icons). Must be called on the EDT.
      */
     fun refreshGutters(project: Project) {
         for (editor in openTextEditors(project)) {
@@ -52,7 +52,7 @@ object ReatomGraphRefresher {
         }
     }
 
-    /** Открытые в проекте текстовые редакторы. */
+    /** Text editors currently open in the project. */
     fun openTextEditors(project: Project): List<Editor> =
         FileEditorManager.getInstance(project).allEditors
             .filterIsInstance<TextEditor>()

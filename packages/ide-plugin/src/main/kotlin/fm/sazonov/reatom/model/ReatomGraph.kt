@@ -17,34 +17,34 @@
 package fm.sazonov.reatom.model
 
 /**
- * Модель реактивного графа — контракт с анализатором `@openide/reatom-ts-plugin`
- * (`src/analyzer/graph.ts`). Поля и значения по умолчанию подобраны под Gson:
- * десериализация JSON, который печатает `node cli.js`.
+ * The reactive graph model — the contract with the `@openide/reatom-ts-plugin`
+ * analyzer (`src/analyzer/graph.ts`). The fields and default values are chosen
+ * for Gson: deserialization of the JSON that `node cli.js` prints.
  */
 
-/** Диапазон в файле в offset'ах. */
+/** A range in a file, in offsets. */
 data class GraphRange(
     val start: Int = 0,
     val end: Int = 0,
 )
 
-/** Узел графа — объявление Reatom-юнита. */
+/** A graph node — a Reatom unit declaration. */
 data class ReatomGraphNode(
     val id: String = "",
     /** `atom` | `computed` | `action` | `effect`. */
     val kind: String = "",
     val name: String = "",
-    /** Абсолютный путь файла объявления. */
+    /** The absolute path of the declaration file. */
     val file: String = "",
     val range: GraphRange = GraphRange(),
     val extensions: List<String> = emptyList(),
 )
 
-/** Ребро графа — одно использование юнита. */
+/** A graph edge — a single usage of a unit. */
 data class ReatomGraphEdge(
-    /** id используемого юнита. */
+    /** The id of the used unit. */
     val to: String = "",
-    /** id объемлющего юнита, если использование внутри него. */
+    /** The id of the enclosing unit, if the usage is inside it. */
     val from: String? = null,
     /** `read` | `write` | `extend`. */
     val kind: String = "",
@@ -52,7 +52,7 @@ data class ReatomGraphEdge(
     val range: GraphRange = GraphRange(),
 )
 
-/** Граф целиком — выход анализатора. */
+/** The graph as a whole — the analyzer output. */
 data class ReatomGraph(
     val schemaVersion: Int = 0,
     val nodes: List<ReatomGraphNode> = emptyList(),

@@ -26,7 +26,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import java.io.File
 
-/** Найденные пути для запуска анализатора реактивного графа. */
+/** Resolved paths needed to run the reactive graph analyzer. */
 data class AnalyzerLocations(
     val node: File,
     val analyzerCli: File,
@@ -34,15 +34,16 @@ data class AnalyzerLocations(
 )
 
 /**
- * Решает, запускать ли анализатор, и если да — чем и что.
+ * Decides whether to run the analyzer and, if so, with what and against what.
  *
- * Сначала проверяет, что проект **реально использует Reatom** (зависит от
- * `@reatom/core`). Затем достаёт **самодостаточный бандл анализатора**, который
- * IDE-плагин возит в себе (наш код + TypeScript внутри одного `.cjs`), и ищет
- * `node` и `tsconfig.json`. Потребителю при этом НЕ нужен npm-пакет
- * `@openide/reatom-ts-plugin` — IDE-плагин самодостаточен.
+ * It first checks that the project **actually uses Reatom** (depends on
+ * `@reatom/core`). Then it extracts the **self-contained analyzer bundle** that
+ * the IDE plugin carries inside itself (our code plus TypeScript within a single
+ * `.cjs`) and looks for `node` and `tsconfig.json`. The consumer does NOT need
+ * the `@openide/reatom-ts-plugin` npm package — the IDE plugin is self-contained.
  *
- * Поиск best-effort: чего-то нет — анализатор просто не запускается.
+ * The lookup is best-effort: if something is missing, the analyzer simply does
+ * not run.
  */
 object ReatomAnalyzerLocator {
 
@@ -50,7 +51,7 @@ object ReatomAnalyzerLocator {
 
     private const val PLUGIN_ID = "fm.sazonov.reatom"
 
-    /** Путь бандла анализатора внутри jar'а плагина (см. build.gradle.kts). */
+    /** Path of the analyzer bundle inside the plugin jar (see build.gradle.kts). */
     private const val BUNDLE_RESOURCE = "analyzer/reatom-analyzer.cjs"
 
     private val DEPENDENCY_SECTIONS = listOf(
@@ -75,9 +76,9 @@ object ReatomAnalyzerLocator {
     }
 
     /**
-     * Использует ли проект Reatom: `@reatom/core` объявлен в зависимостях
-     * какого-либо `package.json` вверх по дереву либо установлен в
-     * `node_modules` (учитывает hoisting зависимостей в монорепозиториях).
+     * Whether the project uses Reatom: `@reatom/core` is declared in the
+     * dependencies of some `package.json` up the tree, or installed in
+     * `node_modules` (accounts for dependency hoisting in monorepos).
      */
     private fun usesReatom(start: File): Boolean {
         var directory: File? = start
@@ -90,7 +91,7 @@ object ReatomAnalyzerLocator {
         return false
     }
 
-    /** Объявлен ли `@reatom/core` в секциях зависимостей `package.json`. */
+    /** Whether `@reatom/core` is declared in the dependency sections of `package.json`. */
     private fun declaresReatom(packageJson: File): Boolean =
         try {
             val root = JsonParser.parseString(packageJson.readText()).asJsonObject
@@ -102,8 +103,8 @@ object ReatomAnalyzerLocator {
         }
 
     /**
-     * Распаковывает бандл анализатора из ресурсов плагина в системный каталог
-     * IDE (один раз на версию плагина) и возвращает путь к нему.
+     * Extracts the analyzer bundle from the plugin resources into the IDE
+     * system directory (once per plugin version) and returns its path.
      */
     private fun bundledAnalyzer(): File? {
         val version = PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "dev"
@@ -113,7 +114,7 @@ object ReatomAnalyzerLocator {
             val resource = ReatomAnalyzerLocator::class.java.classLoader
                 .getResourceAsStream(BUNDLE_RESOURCE)
                 ?: run {
-                    thisLogger().warn("Reatom: бандл анализатора не найден в плагине")
+                    thisLogger().warn("Reatom: analyzer bundle not found in the plugin")
                     return null
                 }
             target.parentFile.mkdirs()
@@ -125,7 +126,7 @@ object ReatomAnalyzerLocator {
             }
             target
         } catch (e: Exception) {
-            thisLogger().warn("Reatom: не удалось распаковать бандл анализатора", e)
+            thisLogger().warn("Reatom: failed to extract the analyzer bundle", e)
             null
         }
     }
@@ -135,7 +136,7 @@ object ReatomAnalyzerLocator {
         return NODE_FALLBACKS.map(::File).firstOrNull { it.canExecute() }
     }
 
-    /** Ищет `relative` в `start` и вверх по дереву каталогов. */
+    /** Looks for `relative` in `start` and up the directory tree. */
     private fun findUpwards(start: File, relative: String): File? {
         var directory: File? = start
         while (directory != null) {

@@ -25,7 +25,7 @@ import fm.sazonov.reatom.model.ReatomGraphModel
 import fm.sazonov.reatom.model.ReatomGraphNode
 import fm.sazonov.reatom.model.ReatomNodeSummary
 
-/** Юнит-тесты чистых операций над моделью графа — без платформы. */
+/** Unit tests of the pure operations on the graph model — without the platform. */
 class ReatomGraphModelTest {
 
     private fun node(

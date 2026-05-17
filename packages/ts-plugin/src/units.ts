@@ -17,10 +17,10 @@
 import type * as ts from 'typescript';
 import { isReatomSymbol } from './activation';
 
-/** Роль Reatom-сущности: `atom` / `computed` / `action` / `effect`. */
+/** Role of a Reatom entity: `atom` / `computed` / `action` / `effect`. */
 export type ReatomUnitKind = 'atom' | 'computed' | 'action' | 'effect';
 
-/** Имена фабрик `@reatom/core`, создающих юниты, → роль. */
+/** Names of `@reatom/core` factories that create units → role. */
 const FACTORY_KIND: Readonly<Record<string, ReatomUnitKind>> = {
   atom: 'atom',
   computed: 'computed',
@@ -28,25 +28,26 @@ const FACTORY_KIND: Readonly<Record<string, ReatomUnitKind>> = {
   effect: 'effect',
 };
 
-/** Применённое к юниту `with*`-расширение. */
+/** A `with*` extension applied to a unit. */
 export interface ReatomExtension {
-  /** Имя расширения, как в коде: `withAsync`, `withCache`, … */
+  /** Extension name as written in code: `withAsync`, `withCache`, … */
   name: string;
 }
 
-/** Объявление Reatom-юнита, найденное в исходнике. */
+/** A Reatom unit declaration found in the source. */
 export interface ReatomUnit {
   kind: ReatomUnitKind;
   name: string;
-  /** Узел-объявление — стабильный ключ для счётчиков использований. */
+  /** Declaration node — a stable key for usage counters. */
   declaration: ts.VariableDeclaration;
-  /** `with*`-расширения из `.extend(...)`, в порядке применения. */
+  /** `with*` extensions from `.extend(...)`, in application order. */
   extensions: ReatomExtension[];
 }
 
 /**
- * Снимает цепочку `.extend(...)` с инициализатора и возвращает базовый вызов
- * фабрики плюс собранные `.extend`-вызовы (внешний — первым в массиве).
+ * Strips the `.extend(...)` chain off the initializer and returns the base
+ * factory call plus the collected `.extend` calls (outermost first in the
+ * array).
  */
 function unwrapExtendChain(
   tsm: typeof ts,
@@ -65,7 +66,7 @@ function unwrapExtendChain(
   return { base: tsm.isCallExpression(current) ? current : undefined, extendCalls };
 }
 
-/** Идентификатор-callee вызова: `atom(...)` → `atom`, `r.atom(...)` → `atom`. */
+/** Callee identifier of a call: `atom(...)` → `atom`, `r.atom(...)` → `atom`. */
 function calleeIdentifier(tsm: typeof ts, call: ts.CallExpression): ts.Identifier | undefined {
   const callee = call.expression;
   if (tsm.isIdentifier(callee)) return callee;
@@ -75,7 +76,7 @@ function calleeIdentifier(tsm: typeof ts, call: ts.CallExpression): ts.Identifie
   return undefined;
 }
 
-/** Разворачивает alias импорта до исходного символа. */
+/** Unwraps an import alias down to the original symbol. */
 function resolveAlias(
   tsm: typeof ts,
   checker: ts.TypeChecker,
@@ -85,15 +86,15 @@ function resolveAlias(
     try {
       return checker.getAliasedSymbol(symbol);
     } catch {
-      /* getAliasedSymbol может бросить на незавершённом alias — оставляем как есть */
+      /* getAliasedSymbol may throw on an incomplete alias — keep it as is */
     }
   }
   return symbol;
 }
 
 /**
- * Определяет роль по базовому вызову фабрики; `undefined`, если это не фабрика
- * Reatom. Резолвинг символа отсекает чужие одноимённые функции.
+ * Determines the role from the base factory call; `undefined` if it is not a
+ * Reatom factory. Symbol resolution filters out foreign same-named functions.
  */
 function classifyFactory(
   tsm: typeof ts,
@@ -109,13 +110,13 @@ function classifyFactory(
   return FACTORY_KIND[symbol!.getName()];
 }
 
-/** Собирает имена `with*`-расширений из аргументов `.extend(...)`. */
+/** Collects `with*` extension names from `.extend(...)` arguments. */
 function collectExtensions(
   tsm: typeof ts,
   extendCalls: ts.CallExpression[],
 ): ReatomExtension[] {
   const extensions: ReatomExtension[] = [];
-  // extendCalls идёт «внешний → внутренний», применяются — в обратном порядке.
+  // extendCalls runs "outer → inner", extensions apply in reverse order.
   for (const call of [...extendCalls].reverse()) {
     for (const arg of call.arguments) {
       const id = tsm.isCallExpression(arg)
@@ -154,8 +155,8 @@ function tryReadUnit(
 }
 
 /**
- * Находит все объявления Reatom-юнитов в файле: `const X = atom(...)` и т.п.,
- * включая цепочки `.extend(...)`.
+ * Finds all Reatom unit declarations in a file: `const X = atom(...)` and the
+ * like, including `.extend(...)` chains.
  */
 export function findReatomUnits(
   tsm: typeof ts,

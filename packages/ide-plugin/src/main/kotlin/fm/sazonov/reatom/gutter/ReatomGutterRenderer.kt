@@ -38,18 +38,19 @@ import fm.sazonov.reatom.navigation.ReatomNavigation.UsageFilter
 import javax.swing.Icon
 
 /**
- * Ставит нативные gutter-иконки на строки Reatom-юнитов в редакторе. На
- * объявлениях — отдельные иконки чтений и записей (клик ведёт к использованиям).
- * На строках использования — иконка перехода к объявлению юнита (клик ведёт
- * к месту инициализации, в т.ч. в другом файле). Иконки вешаются на
- * markup-модель по offset'ам — `LineMarkerProvider` PSI-зависим, а TS-PSI нет.
+ * Places native gutter icons on the lines of Reatom units in the editor. On
+ * declarations — separate icons for reads and writes (a click leads to the
+ * usages). On usage lines — an icon for navigating to the unit declaration (a
+ * click leads to the initialization site, including in another file). The
+ * icons are attached to the markup model by offsets — `LineMarkerProvider` is
+ * PSI-dependent, and there is no TS-PSI.
  */
 object ReatomGutterRenderer {
 
     private val HIGHLIGHTERS_KEY: Key<MutableList<RangeHighlighter>> =
         Key.create("reatom.gutter.highlighters")
 
-    /** Снимает прежние иконки редактора и ставит актуальные по модели графа. */
+    /** Removes the editor's previous icons and places current ones from the graph model. */
     fun refresh(editor: Editor) {
         clear(editor)
         val project = editor.project ?: return
@@ -63,7 +64,7 @@ object ReatomGutterRenderer {
         editor.putUserData(HIGHLIGHTERS_KEY, added)
     }
 
-    /** Иконки чтений/записей на объявлениях юнитов. */
+    /** Read/write icons on unit declarations. */
     private fun addDeclarationIcons(
         editor: Editor,
         graph: ReatomGraph,
@@ -93,9 +94,9 @@ object ReatomGutterRenderer {
     }
 
     /**
-     * Иконки перехода к объявлению на строках использования юнитов. Рёбра
-     * графа группируются по строке: одна строка — одна иконка, её цель —
-     * объявления всех используемых на ней юнитов.
+     * Navigate-to-declaration icons on unit usage lines. Graph edges are
+     * grouped by line: one line — one icon, its target being the declarations
+     * of all units used on that line.
      */
     private fun addUsageIcons(
         editor: Editor,
@@ -149,8 +150,8 @@ object ReatomGutterRenderer {
 }
 
 /**
- * Gutter-иконка на объявлении юнита — одного вида связи (чтения или записи).
- * По клику открывает попап с использованиями только этого вида.
+ * A gutter icon on a unit declaration — for a single relation kind (reads or
+ * writes). On click, opens a popup with usages of that kind only.
  */
 private class ReatomGutterIconRenderer(
     private val node: ReatomGraphNode,
@@ -162,7 +163,7 @@ private class ReatomGutterIconRenderer(
         if (filter == UsageFilter.WRITE) AllIcons.Gutter.WriteAccess
         else AllIcons.Gutter.ReadAccess
 
-    /** Маркеры объявлений выравниваются по левому краю gutter'а. */
+    /** Declaration markers are aligned to the left edge of the gutter. */
     override fun getAlignment(): Alignment = Alignment.LEFT
 
     override fun getTooltipText(): String =
@@ -173,7 +174,7 @@ private class ReatomGutterIconRenderer(
             count,
         )
 
-    /** Имя иконки для скринридеров. */
+    /** The icon name for screen readers. */
     override fun getAccessibleName(): String =
         ReatomBundle.message(
             if (filter == UsageFilter.WRITE) "gutter.accessibleName.write"
@@ -202,8 +203,8 @@ private class ReatomGutterIconRenderer(
 }
 
 /**
- * Gutter-иконка на строке использования юнита(ов). По клику переходит к
- * объявлению: один юнит — сразу, несколько — через попап выбора.
+ * A gutter icon on a line where unit(s) are used. On click, navigates to the
+ * declaration: a single unit — immediately, several — via a chooser popup.
  */
 private class ReatomUsageGutterIconRenderer(
     private val targets: List<ReatomGraphNode>,
@@ -211,7 +212,7 @@ private class ReatomUsageGutterIconRenderer(
 
     override fun getIcon(): Icon = AllIcons.Gutter.OverridingMethod
 
-    /** Маркеры выравниваются по левому краю gutter'а. */
+    /** Markers are aligned to the left edge of the gutter. */
     override fun getAlignment(): Alignment = Alignment.LEFT
 
     override fun getTooltipText(): String =
@@ -223,7 +224,7 @@ private class ReatomUsageGutterIconRenderer(
             ReatomBundle.message("gutter.usage.tooltip.many", targets.size)
         }
 
-    /** Имя иконки для скринридеров. */
+    /** The icon name for screen readers. */
     override fun getAccessibleName(): String =
         ReatomBundle.message("gutter.usage.accessibleName")
 

@@ -1,32 +1,34 @@
 # @openide/reatom-ts-plugin
 
-Анализатор реактивного графа [Reatom v1001](https://v1001.reatom.dev). По
-проекту на TypeScript Compiler API строит модель: узлы `atom` / `computed` /
-`action` / `effect` и рёбра `read` / `write` / `extend`. На этой модели стоят
-Code Lens, gutter-иконки и навигация `reatom-ide-plugin`.
+A reactive graph analyzer for [Reatom v1001](https://v1001.reatom.dev). It
+walks a project with the TypeScript Compiler API and builds a model: `atom` /
+`computed` / `action` / `effect` nodes and `read` / `write` / `extend` edges.
+On top of this model sit the Code Lens, gutter icons, and navigation of
+`reatom-ide-plugin`.
 
-Полная концепция — [docs/features-reatom-plugin.md](../../docs/features-reatom-plugin.md),
-дизайн анализатора — [docs/feature-6-analyzer.md](../../docs/feature-6-analyzer.md).
+The full concept — [docs/features-reatom-plugin.md](../../docs/features-reatom-plugin.md);
+the analyzer design — [docs/feature-6-analyzer.md](../../docs/feature-6-analyzer.md).
 
-## Состав
+## Contents
 
-- `src/analyzer/` — анализатор: `cli.ts` (one-shot CLI) и `graph.ts`
-  (построение модели по готовой `ts.Program`);
-- `src/units.ts`, `src/activation.ts` — детекция Reatom-юнитов по резолвингу
-  символов фабрик (чужие одноимённые `atom` / `action` отсекаются).
+- `src/analyzer/` — the analyzer: `cli.ts` (a one-shot CLI) and `graph.ts`
+  (building the model from a ready `ts.Program`);
+- `src/units.ts`, `src/activation.ts` — detection of Reatom units by resolving
+  factory symbols (foreign `atom` / `action` with the same names are filtered out).
 
-CLI: `node dist/analyzer/cli.js --project path/to/tsconfig.json` — печатает
-JSON-модель графа в stdout.
+CLI: `node dist/analyzer/cli.js --project path/to/tsconfig.json` — prints the
+JSON graph model to stdout.
 
-## Бандл для IDE-плагина
+## Bundle for the IDE plugin
 
-`npm run build` помимо `tsc` собирает esbuild'ом самодостаточный бандл
-`dist/analyzer/reatom-analyzer.cjs` — весь анализатор плюс TypeScript внутри
-одного файла. `reatom-ide-plugin` кладёт этот бандл ресурсом в свой
-дистрибутив и запускает сам, поэтому потребителю **не нужно** ставить этот
-npm-пакет — достаточно зависимости `@reatom/core` в проекте.
+In addition to `tsc`, `npm run build` uses esbuild to assemble the
+self-contained bundle `dist/analyzer/reatom-analyzer.cjs` — the entire
+analyzer plus TypeScript inside a single file. `reatom-ide-plugin` puts this
+bundle into its distribution as a resource and runs it itself, so the consumer
+**does not need** to install this npm package — a `@reatom/core` dependency in
+the project is enough.
 
-## Разработка
+## Development
 
 ```bash
 npm install

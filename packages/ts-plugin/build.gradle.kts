@@ -5,11 +5,12 @@ plugins {
 }
 
 /**
- * `ts-plugin` — анализатор реактивного графа на TypeScript. Gradle здесь —
- * тонкая обёртка над npm: node-gradle сам скачивает Node нужной версии, так
- * что сборка воспроизводима и не зависит от системного Node.
+ * `ts-plugin` — a reactive graph analyzer written in TypeScript. Gradle here
+ * is a thin wrapper over npm: node-gradle downloads the required Node version
+ * itself, so the build is reproducible and independent of the system Node.
  *
- * npm-workspace объявлен в корне репозитория — туда и смотрит node-gradle.
+ * The npm workspace is declared at the repository root — that is where
+ * node-gradle looks.
  */
 node {
     version.set("22.11.0")
@@ -17,8 +18,8 @@ node {
     nodeProjectDir.set(rootProject.projectDir)
 }
 
-// Собирает самодостаточный бандл анализатора (tsc + esbuild) →
-// dist/analyzer/reatom-analyzer.cjs. Его ресурсом возит подпроект :ide-plugin.
+// Builds a self-contained analyzer bundle (tsc + esbuild) →
+// dist/analyzer/reatom-analyzer.cjs. The :ide-plugin subproject ships it as a resource.
 val buildAnalyzer = tasks.register<NpmTask>("buildAnalyzer") {
     dependsOn("npmInstall")
     args.set(listOf("run", "build", "--workspace", "@openide/reatom-ts-plugin"))
@@ -27,7 +28,7 @@ val buildAnalyzer = tasks.register<NpmTask>("buildAnalyzer") {
     outputs.dir("dist")
 }
 
-// Тесты анализатора (vitest).
+// Analyzer tests (vitest).
 val npmTest = tasks.register<NpmTask>("test") {
     dependsOn("npmInstall")
     args.set(listOf("run", "test", "--workspace", "@openide/reatom-ts-plugin"))
