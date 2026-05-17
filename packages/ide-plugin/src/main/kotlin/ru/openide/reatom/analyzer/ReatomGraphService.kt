@@ -43,6 +43,9 @@ class ReatomGraphService(private val project: Project) : Disposable {
     /** Дебаунсер ре-анализа: коалесцирует пачку правок в один запуск Node. */
     private val reloadAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
 
+    /** Дебаунсер быстрого пересбора gutter-иконок после правок. */
+    private val gutterAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
+
     init {
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(
             object : DocumentListener {
@@ -51,6 +54,7 @@ class ReatomGraphService(private val project: Project) : Disposable {
                     if (file == null || !affectsGraph(file)) return
                     shiftGraph(file.path, event.offset, event.newLength - event.oldLength)
                     scheduleReload()
+                    scheduleGutterRefresh()
                 }
             },
             this,
@@ -70,6 +74,21 @@ class ReatomGraphService(private val project: Project) : Disposable {
                 reloadAsync()
             },
             RELOAD_DEBOUNCE_MS,
+        )
+    }
+
+    /**
+     * Планирует быстрый пересбор gutter-иконок после короткой паузы в
+     * редактировании — отдельно от ре-анализа. Usage-иконки группируются по
+     * строкам, а строки сдвигаются при любой правке: группировку надо
+     * обновлять, даже когда граф структурно не менялся (и Node для этого не
+     * нужен — `shiftGraph` уже поправил offset'ы в памяти).
+     */
+    fun scheduleGutterRefresh() {
+        gutterAlarm.cancelAllRequests()
+        gutterAlarm.addRequest(
+            { ReatomGraphRefresher.refreshGutters(project) },
+            GUTTER_DEBOUNCE_MS,
         )
     }
 
@@ -182,6 +201,7 @@ class ReatomGraphService(private val project: Project) : Disposable {
     companion object {
         private const val ANALYZER_TIMEOUT_MS = 60_000
         private const val RELOAD_DEBOUNCE_MS = 1_200
+        private const val GUTTER_DEBOUNCE_MS = 250
         private val TS_EXTENSIONS = setOf("ts", "tsx", "mts", "cts")
 
         fun getInstance(project: Project): ReatomGraphService = project.service()
