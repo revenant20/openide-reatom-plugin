@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom.gutter
+package fm.sazonov.reatom.gutter
 
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.vfs.VirtualFile
-import ru.openide.reatom.analyzer.ReatomGraphService
+import fm.sazonov.reatom.analyzer.ReatomGraphService
 
 /**
  * На открытие файла: если граф ещё не построен — запускает анализатор

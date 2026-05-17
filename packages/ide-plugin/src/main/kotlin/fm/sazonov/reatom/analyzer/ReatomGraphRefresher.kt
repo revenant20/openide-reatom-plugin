@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom.analyzer
+package fm.sazonov.reatom.analyzer
 
 import com.intellij.codeInsight.codeVision.CodeVisionHost
 import com.intellij.openapi.components.service
@@ -22,8 +22,8 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
-import ru.openide.reatom.codevision.ReatomCodeVisionProvider
-import ru.openide.reatom.gutter.ReatomGutterRenderer
+import fm.sazonov.reatom.codevision.ReatomCodeVisionProvider
+import fm.sazonov.reatom.gutter.ReatomGutterRenderer
 
 /** Обновляет UI после перестройки графа: gutter-иконки и Code Lens. */
 object ReatomGraphRefresher {

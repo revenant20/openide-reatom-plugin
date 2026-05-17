@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom
+package fm.sazonov.reatom
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import ru.openide.reatom.model.GraphRange
-import ru.openide.reatom.model.ReatomGraph
-import ru.openide.reatom.model.ReatomGraphEdge
-import ru.openide.reatom.model.ReatomGraphModel
-import ru.openide.reatom.model.ReatomGraphNode
-import ru.openide.reatom.model.ReatomNodeSummary
+import fm.sazonov.reatom.model.GraphRange
+import fm.sazonov.reatom.model.ReatomGraph
+import fm.sazonov.reatom.model.ReatomGraphEdge
+import fm.sazonov.reatom.model.ReatomGraphModel
+import fm.sazonov.reatom.model.ReatomGraphNode
+import fm.sazonov.reatom.model.ReatomNodeSummary
 
 /** Юнит-тесты чистых операций над моделью графа — без платформы. */
 class ReatomGraphModelTest {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom
+package fm.sazonov.reatom
 
 import com.intellij.DynamicBundle
 import org.jetbrains.annotations.Nls

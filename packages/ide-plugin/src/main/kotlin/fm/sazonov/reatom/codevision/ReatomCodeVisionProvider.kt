@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom.codevision
+package fm.sazonov.reatom.codevision
 
 import com.intellij.codeInsight.codeVision.CodeVisionAnchorKind
 import com.intellij.codeInsight.codeVision.CodeVisionEntry
@@ -25,10 +25,10 @@ import com.intellij.codeInsight.codeVision.ui.model.ClickableTextCodeVisionEntry
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.TextRange
-import ru.openide.reatom.ReatomBundle
-import ru.openide.reatom.analyzer.ReatomGraphService
-import ru.openide.reatom.model.ReatomGraphModel
-import ru.openide.reatom.navigation.ReatomNavigation
+import fm.sazonov.reatom.ReatomBundle
+import fm.sazonov.reatom.analyzer.ReatomGraphService
+import fm.sazonov.reatom.model.ReatomGraphModel
+import fm.sazonov.reatom.navigation.ReatomNavigation
 
 /**
  * Нативный Code Lens платформы IntelliJ: кликабельная строка-сводка над

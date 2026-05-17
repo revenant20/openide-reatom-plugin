@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom.model
+package fm.sazonov.reatom.model
 
 /**
  * Модель реактивного графа — контракт с анализатором `@openide/reatom-ts-plugin`

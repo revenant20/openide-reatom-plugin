@@ -1,5 +1,5 @@
 <idea-plugin>
-    <id>ru.openide.reatom</id>
+    <id>fm.sazonov.reatom</id>
     <name>Reatom Support</name>
     <vendor url="https://openide.ru">OpenIDE</vendor>
 
@@ -16,13 +16,13 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <codeInsight.codeVisionProvider
-                implementation="ru.openide.reatom.codevision.ReatomCodeVisionProvider"/>
+                implementation="fm.sazonov.reatom.codevision.ReatomCodeVisionProvider"/>
         <postStartupActivity
-                implementation="ru.openide.reatom.ReatomStartupActivity"/>
+                implementation="fm.sazonov.reatom.ReatomStartupActivity"/>
     </extensions>
 
     <projectListeners>
-        <listener class="ru.openide.reatom.gutter.ReatomFileEditorListener"
+        <listener class="fm.sazonov.reatom.gutter.ReatomFileEditorListener"
                   topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
     </projectListeners>
 </idea-plugin>

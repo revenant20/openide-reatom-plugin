@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom.gutter
+package fm.sazonov.reatom.gutter
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
@@ -27,14 +27,14 @@ import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.Key
-import ru.openide.reatom.ReatomBundle
-import ru.openide.reatom.analyzer.ReatomGraphService
-import ru.openide.reatom.model.ReatomGraph
-import ru.openide.reatom.model.ReatomGraphEdge
-import ru.openide.reatom.model.ReatomGraphModel
-import ru.openide.reatom.model.ReatomGraphNode
-import ru.openide.reatom.navigation.ReatomNavigation
-import ru.openide.reatom.navigation.ReatomNavigation.UsageFilter
+import fm.sazonov.reatom.ReatomBundle
+import fm.sazonov.reatom.analyzer.ReatomGraphService
+import fm.sazonov.reatom.model.ReatomGraph
+import fm.sazonov.reatom.model.ReatomGraphEdge
+import fm.sazonov.reatom.model.ReatomGraphModel
+import fm.sazonov.reatom.model.ReatomGraphNode
+import fm.sazonov.reatom.navigation.ReatomNavigation
+import fm.sazonov.reatom.navigation.ReatomNavigation.UsageFilter
 import javax.swing.Icon
 
 /**

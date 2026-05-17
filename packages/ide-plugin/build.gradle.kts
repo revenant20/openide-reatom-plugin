@@ -4,7 +4,7 @@ plugins {
     id("org.jetbrains.intellij.platform") version "2.10.2"
 }
 
-group = "ru.openide.reatom"
+group = "fm.sazonov.reatom"
 version = "0.0.1"
 
 repositories {

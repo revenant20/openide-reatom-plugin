@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom.navigation
+package fm.sazonov.reatom.navigation
 
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.icons.AllIcons
@@ -31,11 +31,11 @@ import com.intellij.ui.ColoredListCellRenderer
 import com.intellij.ui.RowIcon
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.awt.RelativePoint
-import ru.openide.reatom.ReatomBundle
-import ru.openide.reatom.analyzer.ReatomGraphService
-import ru.openide.reatom.model.ReatomGraphEdge
-import ru.openide.reatom.model.ReatomGraphModel
-import ru.openide.reatom.model.ReatomGraphNode
+import fm.sazonov.reatom.ReatomBundle
+import fm.sazonov.reatom.analyzer.ReatomGraphService
+import fm.sazonov.reatom.model.ReatomGraphEdge
+import fm.sazonov.reatom.model.ReatomGraphModel
+import fm.sazonov.reatom.model.ReatomGraphNode
 import javax.swing.Icon
 import javax.swing.JList
 

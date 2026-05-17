@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom
+package fm.sazonov.reatom
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
-import ru.openide.reatom.analyzer.ReatomGraphService
+import fm.sazonov.reatom.analyzer.ReatomGraphService
 
 /** На открытие проекта строит реактивный граф в фоне. */
 class ReatomStartupActivity : ProjectActivity {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom.model
+package fm.sazonov.reatom.model
 
 /** Сводка по узлу — то, что показывают Code Lens и тултип gutter-иконки. */
 data class ReatomNodeSummary(

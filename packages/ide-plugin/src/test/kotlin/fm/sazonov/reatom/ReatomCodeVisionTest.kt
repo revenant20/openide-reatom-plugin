@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom
+package fm.sazonov.reatom
 
 import com.intellij.codeInsight.codeVision.ui.model.TextCodeVisionEntry
 import com.intellij.icons.AllIcons
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import ru.openide.reatom.analyzer.ReatomGraphService
-import ru.openide.reatom.codevision.ReatomCodeVisionProvider
-import ru.openide.reatom.gutter.ReatomGutterRenderer
-import ru.openide.reatom.model.GraphRange
-import ru.openide.reatom.model.ReatomGraph
-import ru.openide.reatom.model.ReatomGraphEdge
-import ru.openide.reatom.model.ReatomGraphNode
+import fm.sazonov.reatom.analyzer.ReatomGraphService
+import fm.sazonov.reatom.codevision.ReatomCodeVisionProvider
+import fm.sazonov.reatom.gutter.ReatomGutterRenderer
+import fm.sazonov.reatom.model.GraphRange
+import fm.sazonov.reatom.model.ReatomGraph
+import fm.sazonov.reatom.model.ReatomGraphEdge
+import fm.sazonov.reatom.model.ReatomGraphNode
 
 /** Тесты рендеринга Code Lens и gutter-иконок по заданной модели графа. */
 class ReatomCodeVisionTest : BasePlatformTestCase() {

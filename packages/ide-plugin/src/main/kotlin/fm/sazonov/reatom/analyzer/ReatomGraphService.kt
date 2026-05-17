@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom.analyzer
+package fm.sazonov.reatom.analyzer
 
 import com.google.gson.Gson
 import com.intellij.execution.configurations.GeneralCommandLine
@@ -31,8 +31,8 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.Alarm
-import ru.openide.reatom.model.GraphRange
-import ru.openide.reatom.model.ReatomGraph
+import fm.sazonov.reatom.model.GraphRange
+import fm.sazonov.reatom.model.ReatomGraph
 
 /**
  * Проектный сервис: хранит модель реактивного графа и умеет её перестраивать,

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.openide.reatom.analyzer
+package fm.sazonov.reatom.analyzer
 
 import com.google.gson.JsonParser
 import com.intellij.execution.configurations.PathEnvironmentVariableUtil
@@ -48,7 +48,7 @@ object ReatomAnalyzerLocator {
 
     private const val REATOM_PACKAGE = "@reatom/core"
 
-    private const val PLUGIN_ID = "ru.openide.reatom"
+    private const val PLUGIN_ID = "fm.sazonov.reatom"
 
     /** Путь бандла анализатора внутри jar'а плагина (см. build.gradle.kts). */
     private const val BUNDLE_RESOURCE = "analyzer/reatom-analyzer.cjs"
