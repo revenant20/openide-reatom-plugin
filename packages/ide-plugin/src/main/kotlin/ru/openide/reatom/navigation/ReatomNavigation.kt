@@ -19,13 +19,15 @@ import ru.openide.reatom.ReatomBundle
 import ru.openide.reatom.analyzer.ReatomGraphService
 import ru.openide.reatom.model.ReatomGraphEdge
 import ru.openide.reatom.model.ReatomGraphModel
+import ru.openide.reatom.model.ReatomGraphNode
 import javax.swing.Icon
 import javax.swing.JList
 
 /**
  * Навигация по реактивным связям юнита — общая для Code Lens и gutter-иконок.
- * Показывает использования юнита и переходит к выбранному: одно — сразу,
- * несколько — через попап-список.
+ * От объявления — к использованиям ([showUsages]); от использования — к
+ * объявлению ([showDeclarations]). Одна цель — переход сразу, несколько —
+ * через попап-список.
  */
 object ReatomNavigation {
 
@@ -46,7 +48,7 @@ object ReatomNavigation {
         fun emptyHint(name: String): String = ReatomBundle.message("navigation.empty.$key", name)
     }
 
-    /** Запись попапа — все использования на одной строке файла. */
+    /** Запись попапа использований — все использования на одной строке файла. */
     private class Usage(
         val file: String,
         val offset: Int,
@@ -58,7 +60,7 @@ object ReatomNavigation {
         override fun toString(): String = "$location $code"
     }
 
-    /** Рендер строки попапа: иконка(и) видов связи + расположение + код. */
+    /** Рендер строки попапа использований: иконка(и) видов связи + место + код. */
     private class UsageRenderer : ColoredListCellRenderer<Usage>() {
         override fun customizeCellRenderer(
             list: JList<out Usage>,
@@ -73,6 +75,26 @@ object ReatomNavigation {
                 append("  ")
                 append(value.code, SimpleTextAttributes.GRAYED_ATTRIBUTES)
             }
+        }
+    }
+
+    /** Запись попапа объявлений — один Reatom-юнит и место его инициализации. */
+    private class Declaration(val node: ReatomGraphNode, val location: String) {
+        override fun toString(): String = "${node.name} ${node.kind} $location"
+    }
+
+    /** Рендер строки попапа объявлений: имя юнита + его роль и расположение. */
+    private class DeclarationRenderer : ColoredListCellRenderer<Declaration>() {
+        override fun customizeCellRenderer(
+            list: JList<out Declaration>,
+            value: Declaration,
+            index: Int,
+            selected: Boolean,
+            hasFocus: Boolean,
+        ) {
+            icon = AllIcons.Gutter.OverridingMethod
+            append(value.node.name, SimpleTextAttributes.REGULAR_ATTRIBUTES)
+            append("  ${value.node.kind}, ${value.location}", SimpleTextAttributes.GRAYED_ATTRIBUTES)
         }
     }
 
@@ -126,10 +148,49 @@ object ReatomNavigation {
         }
     }
 
+    /**
+     * Переходит к объявлению (инициализации) юнита по клику на usage-гаттере.
+     * Один юнит — сразу, несколько разных на строке — через попап выбора.
+     */
+    fun showDeclarations(project: Project, editor: Editor, unitIds: List<String>) {
+        val graph = ReatomGraphService.getInstance(project).graph ?: return
+        val declarations = unitIds.distinct()
+            .mapNotNull { id -> graph.nodes.find { it.id == id } }
+            .map { Declaration(it, locationOf(it)) }
+        if (declarations.isEmpty()) return
+        if (declarations.size == 1) {
+            navigateToDeclaration(project, declarations.first().node)
+            return
+        }
+        JBPopupFactory.getInstance()
+            .createPopupChooserBuilder(declarations)
+            .setTitle(ReatomBundle.message("navigation.declarations.title"))
+            .setRenderer(DeclarationRenderer())
+            .setFont(EditorUtil.getEditorFont())
+            .setItemChosenCallback { navigateToDeclaration(project, it.node) }
+            .createPopup()
+            .showInBestPositionFor(editor)
+    }
+
     /** Открывает файл записи и ставит курсор на использование. */
     private fun navigate(project: Project, usage: Usage) {
         val file = LocalFileSystem.getInstance().findFileByPath(usage.file) ?: return
         OpenFileDescriptor(project, file, usage.offset).navigate(true)
+    }
+
+    /** Открывает файл объявления и ставит курсор на инициализацию юнита. */
+    private fun navigateToDeclaration(project: Project, node: ReatomGraphNode) {
+        val file = LocalFileSystem.getInstance().findFileByPath(node.file) ?: return
+        OpenFileDescriptor(project, file, node.range.start).navigate(true)
+    }
+
+    /** Расположение объявления юнита в виде `файл:строка`. */
+    private fun locationOf(node: ReatomGraphNode): String {
+        val fileName = LocalFileSystem.getInstance().findFileByPath(node.file)?.name
+            ?: node.file.substringAfterLast('/')
+        val document = documentFor(node.file) ?: return fileName
+        val offset = node.range.start.coerceIn(0, document.textLength)
+        return "$fileName:${document.getLineNumber(offset) + 1}"
     }
 
     /**

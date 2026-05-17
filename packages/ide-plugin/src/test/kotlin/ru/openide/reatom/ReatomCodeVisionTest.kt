@@ -1,6 +1,7 @@
 package ru.openide.reatom
 
 import com.intellij.codeInsight.codeVision.ui.model.TextCodeVisionEntry
+import com.intellij.icons.AllIcons
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import ru.openide.reatom.analyzer.ReatomGraphService
 import ru.openide.reatom.codevision.ReatomCodeVisionProvider
@@ -66,6 +67,41 @@ class ReatomCodeVisionTest : BasePlatformTestCase() {
         // у counter есть и чтение, и запись — две разные gutter-иконки
         assertEquals(2, icons.size)
         assertEquals(2, icons.toSet().size)
+    }
+
+    fun testUsageGutterIconForReference() {
+        val text = "const counter = 0\nconst alias = counter"
+        myFixture.configureByText("model.ts", text)
+        val path = myFixture.file.virtualFile.path
+        val declStart = text.indexOf("counter")
+        val useStart = text.lastIndexOf("counter")
+        val id = "$path:counter"
+        ReatomGraphService.getInstance(project).setGraphForTesting(
+            ReatomGraph(
+                schemaVersion = 1,
+                nodes = listOf(
+                    ReatomGraphNode(
+                        id = id, kind = "atom", name = "counter", file = path,
+                        range = GraphRange(declStart, declStart + "counter".length),
+                    ),
+                ),
+                edges = listOf(
+                    ReatomGraphEdge(
+                        to = id, kind = "read", file = path,
+                        range = GraphRange(useStart, useStart + "counter".length),
+                    ),
+                ),
+            ),
+        )
+
+        ReatomGutterRenderer.refresh(myFixture.editor)
+        val icons = myFixture.editor.markupModel.allHighlighters
+            .mapNotNull { it.gutterIconRenderer?.icon }
+        // на строке использования — иконка перехода к объявлению
+        assertTrue(
+            "ожидалась usage-иконка перехода к объявлению",
+            icons.contains(AllIcons.Gutter.OverridingMethod),
+        )
     }
 
     fun testNoEntriesWhenGraphAbsent() {

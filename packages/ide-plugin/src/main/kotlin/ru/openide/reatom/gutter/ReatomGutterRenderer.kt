@@ -13,6 +13,8 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.Key
 import ru.openide.reatom.ReatomBundle
 import ru.openide.reatom.analyzer.ReatomGraphService
+import ru.openide.reatom.model.ReatomGraph
+import ru.openide.reatom.model.ReatomGraphEdge
 import ru.openide.reatom.model.ReatomGraphModel
 import ru.openide.reatom.model.ReatomGraphNode
 import ru.openide.reatom.navigation.ReatomNavigation
@@ -20,10 +22,11 @@ import ru.openide.reatom.navigation.ReatomNavigation.UsageFilter
 import javax.swing.Icon
 
 /**
- * Ставит нативные gutter-иконки на объявления Reatom-юнитов: отдельная иконка
- * для чтений и отдельная для записей. Клик по иконке чтения открывает только
- * чтения, по иконке записи — только записи. Иконки вешаются на markup-модель
- * редактора по offset'ам — `LineMarkerProvider` PSI-зависим, а TS-PSI нет.
+ * Ставит нативные gutter-иконки на строки Reatom-юнитов в редакторе. На
+ * объявлениях — отдельные иконки чтений и записей (клик ведёт к использованиям).
+ * На строках использования — иконка перехода к объявлению юнита (клик ведёт
+ * к месту инициализации, в т.ч. в другом файле). Иконки вешаются на
+ * markup-модель по offset'ам — `LineMarkerProvider` PSI-зависим, а TS-PSI нет.
  */
 object ReatomGutterRenderer {
 
@@ -37,9 +40,22 @@ object ReatomGutterRenderer {
         val filePath = FileDocumentManager.getInstance().getFile(editor.document)?.path ?: return
         val graph = ReatomGraphService.getInstance(project).graph ?: return
 
-        val summaries = ReatomGraphModel.summarize(graph)
         val documentLength = editor.document.textLength
         val added = ArrayList<RangeHighlighter>()
+        addDeclarationIcons(editor, graph, filePath, documentLength, added)
+        addUsageIcons(editor, graph, filePath, documentLength, added)
+        editor.putUserData(HIGHLIGHTERS_KEY, added)
+    }
+
+    /** Иконки чтений/записей на объявлениях юнитов. */
+    private fun addDeclarationIcons(
+        editor: Editor,
+        graph: ReatomGraph,
+        filePath: String,
+        documentLength: Int,
+        added: MutableList<RangeHighlighter>,
+    ) {
+        val summaries = ReatomGraphModel.summarize(graph)
         for (node in ReatomGraphModel.nodesInFile(graph, filePath)) {
             val start = node.range.start
             val end = node.range.end
@@ -58,7 +74,36 @@ object ReatomGutterRenderer {
                 )
             }
         }
-        editor.putUserData(HIGHLIGHTERS_KEY, added)
+    }
+
+    /**
+     * Иконки перехода к объявлению на строках использования юнитов. Рёбра
+     * графа группируются по строке: одна строка — одна иконка, её цель —
+     * объявления всех используемых на ней юнитов.
+     */
+    private fun addUsageIcons(
+        editor: Editor,
+        graph: ReatomGraph,
+        filePath: String,
+        documentLength: Int,
+        added: MutableList<RangeHighlighter>,
+    ) {
+        val nodesById = graph.nodes.associateBy { it.id }
+        val byLine = LinkedHashMap<Int, MutableList<ReatomGraphEdge>>()
+        for (edge in graph.edges) {
+            if (edge.file != filePath || edge.to !in nodesById) continue
+            val start = edge.range.start
+            if (start < 0 || start >= documentLength) continue
+            byLine.getOrPut(editor.document.getLineNumber(start)) { ArrayList() }.add(edge)
+        }
+        for (edges in byLine.values) {
+            val rep = edges.minByOrNull { it.range.start } ?: continue
+            val end = rep.range.end.coerceAtMost(documentLength)
+            if (rep.range.start >= end) continue
+            val targets = edges.map { it.to }.distinct().mapNotNull { nodesById[it] }
+            if (targets.isEmpty()) continue
+            added += addIcon(editor, rep.range.start, end, ReatomUsageGutterIconRenderer(targets))
+        }
     }
 
     private fun addIcon(
@@ -88,8 +133,8 @@ object ReatomGutterRenderer {
 }
 
 /**
- * Gutter-иконка одного вида связи (чтения или записи). По клику открывает
- * попап с использованиями только этого вида.
+ * Gutter-иконка на объявлении юнита — одного вида связи (чтения или записи).
+ * По клику открывает попап с использованиями только этого вида.
  */
 private class ReatomGutterIconRenderer(
     private val node: ReatomGraphNode,
@@ -138,4 +183,48 @@ private class ReatomGutterIconRenderer(
             other.filter == filter
 
     override fun hashCode(): Int = 31 * node.id.hashCode() + filter.hashCode()
+}
+
+/**
+ * Gutter-иконка на строке использования юнита(ов). По клику переходит к
+ * объявлению: один юнит — сразу, несколько — через попап выбора.
+ */
+private class ReatomUsageGutterIconRenderer(
+    private val targets: List<ReatomGraphNode>,
+) : GutterIconRenderer() {
+
+    override fun getIcon(): Icon = AllIcons.Gutter.OverridingMethod
+
+    /** Маркеры выравниваются по левому краю gutter'а. */
+    override fun getAlignment(): Alignment = Alignment.LEFT
+
+    override fun getTooltipText(): String =
+        if (targets.size == 1) {
+            ReatomBundle.message(
+                "gutter.usage.tooltip.single", targets[0].kind, targets[0].name,
+            )
+        } else {
+            ReatomBundle.message("gutter.usage.tooltip.many", targets.size)
+        }
+
+    /** Имя иконки для скринридеров. */
+    override fun getAccessibleName(): String =
+        ReatomBundle.message("gutter.usage.accessibleName")
+
+    override fun isNavigateAction(): Boolean = true
+
+    override fun getClickAction(): AnAction =
+        object : AnAction() {
+            override fun actionPerformed(e: AnActionEvent) {
+                val project = e.project ?: return
+                val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+                ReatomNavigation.showDeclarations(project, editor, targets.map { it.id })
+            }
+        }
+
+    override fun equals(other: Any?): Boolean =
+        other is ReatomUsageGutterIconRenderer &&
+            other.targets.map { it.id } == targets.map { it.id }
+
+    override fun hashCode(): Int = targets.map { it.id }.hashCode()
 }
