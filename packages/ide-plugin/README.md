@@ -55,12 +55,21 @@ reatom-ide-plugin, доступно AI-управление IDE. Если ZIP MC
 Механизм взят из `openide-mcp` как образец; зависимости от самого
 `openide-mcp` нет.
 
-## Зависимость от анализатора
+## Встроенный анализатор
 
-Плагин в рантайме ищет CLI анализатора по пути
-`node_modules/@openide/reatom-ts-plugin/dist/analyzer/cli.js` — вверх от
-каталога проекта. Перед использованием анализатор должен быть собран:
+Плагин **возит анализатор в себе** — потребителю не нужен npm-пакет
+`@openide/reatom-ts-plugin`. `ts-plugin` собирает анализатор в один
+самодостаточный `.cjs` (наш код + TypeScript внутри, esbuild), `build.gradle.kts`
+кладёт его ресурсом в jar (`analyzer/reatom-analyzer.cjs`), а
+`ReatomAnalyzerLocator` распаковывает бандл в системный каталог IDE и
+запускает `node` на нём.
+
+Поэтому перед сборкой IDE-плагина нужно собрать `ts-plugin` — иначе бандла
+не будет (`buildPlugin` это переживёт, но анализатор не заработает):
 
 ```bash
 npm run build --workspace @openide/reatom-ts-plugin
 ```
+
+Анализатор запускается только если проект **реально использует Reatom** —
+зависит от `@reatom/core` (см. `ReatomAnalyzerLocator.usesReatom`).

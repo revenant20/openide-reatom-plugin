@@ -2,6 +2,10 @@ package ru.openide.reatom.analyzer
 
 import com.google.gson.JsonParser
 import com.intellij.execution.configurations.PathEnvironmentVariableUtil
+import com.intellij.ide.plugins.PluginManagerCore
+import com.intellij.openapi.application.PathManager
+import com.intellij.openapi.diagnostic.thisLogger
+import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import java.io.File
@@ -17,20 +21,21 @@ data class AnalyzerLocations(
  * Решает, запускать ли анализатор, и если да — чем и что.
  *
  * Сначала проверяет, что проект **реально использует Reatom** (зависит от
- * `@reatom/core`). Сам по себе установленный `@openide/reatom-ts-plugin`
- * сигналом не считается: IDE-плагин может ставить его сам, поэтому его наличие
- * не означает, что перед нами Reatom-проект.
+ * `@reatom/core`). Затем достаёт **самодостаточный бандл анализатора**, который
+ * IDE-плагин возит в себе (наш код + TypeScript внутри одного `.cjs`), и ищет
+ * `node` и `tsconfig.json`. Потребителю при этом НЕ нужен npm-пакет
+ * `@openide/reatom-ts-plugin` — IDE-плагин самодостаточен.
  *
- * Затем ищет, чем и что запускать: исполняемый `node`, CLI анализатора
- * (`@openide/reatom-ts-plugin`) и `tsconfig.json`. Поиск best-effort: если
- * чего-то нет — анализатор просто не запускается.
+ * Поиск best-effort: чего-то нет — анализатор просто не запускается.
  */
 object ReatomAnalyzerLocator {
 
-    private const val CLI_RELATIVE =
-        "node_modules/@openide/reatom-ts-plugin/dist/analyzer/cli.js"
-
     private const val REATOM_PACKAGE = "@reatom/core"
+
+    private const val PLUGIN_ID = "ru.openide.reatom"
+
+    /** Путь бандла анализатора внутри jar'а плагина (см. build.gradle.kts). */
+    private const val BUNDLE_RESOURCE = "analyzer/reatom-analyzer.cjs"
 
     private val DEPENDENCY_SECTIONS = listOf(
         "dependencies",
@@ -48,9 +53,9 @@ object ReatomAnalyzerLocator {
         val base = project.guessProjectDir()?.let { File(it.path) } ?: return null
         if (!usesReatom(base)) return null
         val node = findNode() ?: return null
-        val cli = findUpwards(base, CLI_RELATIVE) ?: return null
+        val analyzer = bundledAnalyzer() ?: return null
         val tsconfig = findUpwards(base, "tsconfig.json") ?: return null
-        return AnalyzerLocations(node, cli, tsconfig)
+        return AnalyzerLocations(node, analyzer, tsconfig)
     }
 
     /**
@@ -79,6 +84,35 @@ object ReatomAnalyzerLocator {
         } catch (e: Exception) {
             false
         }
+
+    /**
+     * Распаковывает бандл анализатора из ресурсов плагина в системный каталог
+     * IDE (один раз на версию плагина) и возвращает путь к нему.
+     */
+    private fun bundledAnalyzer(): File? {
+        val version = PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "dev"
+        val target = File(PathManager.getSystemPath(), "reatom-analyzer/analyzer-$version.cjs")
+        if (target.isFile && target.length() > 0L) return target
+        return try {
+            val resource = ReatomAnalyzerLocator::class.java.classLoader
+                .getResourceAsStream(BUNDLE_RESOURCE)
+                ?: run {
+                    thisLogger().warn("Reatom: бандл анализатора не найден в плагине")
+                    return null
+                }
+            target.parentFile.mkdirs()
+            val tmp = File.createTempFile("analyzer-", ".cjs", target.parentFile)
+            resource.use { input -> tmp.outputStream().use(input::copyTo) }
+            if (!tmp.renameTo(target)) {
+                tmp.copyTo(target, overwrite = true)
+                tmp.delete()
+            }
+            target
+        } catch (e: Exception) {
+            thisLogger().warn("Reatom: не удалось распаковать бандл анализатора", e)
+            null
+        }
+    }
 
     private fun findNode(): File? {
         PathEnvironmentVariableUtil.findInPath("node")?.let { return it }

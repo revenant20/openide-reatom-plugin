@@ -60,6 +60,22 @@ tasks {
     buildSearchableOptions {
         enabled = false
     }
+
+    // Самодостаточный бандл анализатора (наш код + TypeScript внутри) едет
+    // ресурсом внутри плагина — потребителю не нужен npm-пакет
+    // @openide/reatom-ts-plugin. Собирается в ts-plugin: `npm run build`.
+    processResources {
+        val analyzerBundle =
+            file("${rootProject.projectDir}/../ts-plugin/dist/analyzer/reatom-analyzer.cjs")
+        if (analyzerBundle.isFile) {
+            from(analyzerBundle) { into("analyzer") }
+        } else {
+            logger.lifecycle(
+                "[reatom-ide-plugin] бандл анализатора не найден — соберите ts-plugin: " +
+                    "npm run build --workspace @openide/reatom-ts-plugin",
+            )
+        }
+    }
 }
 
 // Песочница авто-открывает переданный проект — доверяем ему без диалога.
