@@ -21,22 +21,17 @@ dependencies {
         intellijIdea("2025.3")
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
 
-        // The platform MCP Server — the MCP infrastructure inside the IDE.
-        bundledPlugin("com.intellij.mcpServer")
-
-        // MCP Steroid — installed into the sandbox as a localPlugin from a
-        // local mcp-steroid build (the same mechanism as in openide-mcp). It
-        // gives the AI agent full control of the IDE. The path is overridden
-        // via -PmcpSteroidJar=... It is included only if the ZIP has been
-        // built — otherwise buildPlugin/test work without it.
-        val mcpSteroidZip = providers.gradleProperty("mcpSteroidJar").orNull?.let(::file)
-            ?: fileTree("${rootProject.projectDir}/../mcp-steroid/ij-plugin/build/distributions") {
-                include("mcp-steroid-*.zip")
-            }.files.firstOrNull()
+        // MCP Steroid — optional AI-driven IDE control in the sandbox, used by
+        // the maintainer for testing. Opt-in: set the `mcpSteroidDir` Gradle
+        // property (e.g. in ~/.gradle/gradle.properties) to the directory that
+        // holds the mcp-steroid-*.zip distribution. Without the property the
+        // sandbox runs plain — regular builds and tests are unaffected.
+        val mcpSteroidZip = providers.gradleProperty("mcpSteroidDir").orNull
+            ?.let { dir -> fileTree(dir) { include("mcp-steroid-*.zip") }.files.firstOrNull() }
         if (mcpSteroidZip?.isFile == true) {
+            bundledPlugin("com.intellij.mcpServer") // MCP Steroid depends on it
             localPlugin(mcpSteroidZip.absolutePath)
-        } else {
-            logger.lifecycle("[reatom-ide-plugin] MCP Steroid ZIP not found — sandbox without MCP Steroid.")
+            logger.lifecycle("[reatom-ide-plugin] MCP Steroid enabled for the sandbox.")
         }
     }
     testImplementation("junit:junit:4.13.2")

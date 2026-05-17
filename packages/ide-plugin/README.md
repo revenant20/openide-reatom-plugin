@@ -52,13 +52,17 @@ subproject itself. The JDK 21 toolchain, the IntelliJ IDEA 2025.3 platform
 the plugin (by default it opens `../../../reatom-playground`);
 `./scripts/stop-sandbox.sh` stops it.
 
-The sandbox build includes **MCP Steroid** via `localPlugin` — it is taken
-from the local build at `../../../mcp-steroid/ij-plugin/build/distributions/`
-(the path is overridden with `-PmcpSteroidJar=...`). This way, in addition to
-reatom-ide-plugin, AI-driven IDE control is available in the sandbox. If the
-MCP Steroid ZIP is not built, the sandbox comes up without it, and
-`buildPlugin`/`test` are unaffected. The mechanism is borrowed from
-`openide-mcp` as a template; there is no dependency on `openide-mcp` itself.
+Optionally the sandbox can bundle **MCP Steroid** for AI-driven IDE control
+(used in maintainer testing). It is opt-in: point the `mcpSteroidDir` Gradle
+property at the directory holding the `mcp-steroid-*.zip` distribution — for
+example, in `~/.gradle/gradle.properties`:
+
+```properties
+mcpSteroidDir=/path/to/mcp-steroid/ij-plugin/build/distributions
+```
+
+Without the property the sandbox runs plain; regular `build` / `test` are
+unaffected either way.
 
 ## Built-in analyzer
 
