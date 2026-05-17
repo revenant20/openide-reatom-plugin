@@ -1,0 +1,13 @@
+{
+  "//": "Тесты в сборку не идут — конфиг только для тайпчека (IDE + tsc).",
+  "//module": "vitest гоняет тесты как ESM — отсюда esnext/bundler и import.meta.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "rootDir": "..",
+    "module": "esnext",
+    "moduleResolution": "bundler"
+  },
+  "include": ["**/*.ts"]
+}

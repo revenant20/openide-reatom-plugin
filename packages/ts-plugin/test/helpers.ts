@@ -8,6 +8,7 @@ import * as ts from 'typescript';
  * резолвить `atom`/`computed`/… в файл под `@reatom/`, иначе детекция роли
  * (она идёт по символу, не по имени) их не примет.
  */
+// language=TypeScript
 export const REATOM_CORE_DTS = `
 export interface Atom<T> {
   (): T;
@@ -32,10 +33,8 @@ export declare function withMemo<T>(): (target: T) => T;
 
 const COMPILER_OPTIONS: ts.CompilerOptions = {
   target: ts.ScriptTarget.ES2020,
-  module: ts.ModuleKind.CommonJS,
-  moduleResolution:
-    (ts.ModuleResolutionKind as { Node10?: ts.ModuleResolutionKind }).Node10 ??
-    ts.ModuleResolutionKind.NodeJs,
+  module: ts.ModuleKind.Node16,
+  moduleResolution: ts.ModuleResolutionKind.Node16,
   strict: true,
   skipLibCheck: true,
   jsx: ts.JsxEmit.Preserve,
