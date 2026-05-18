@@ -41,8 +41,11 @@ A monorepo of two packages with a single Gradle build:
 The repository is a single Gradle multi-project; build from the root:
 
 ```bash
-# build and check everything: the analyzer, the IDE plugin, the tests
+# build the analyzer and the IDE plugin
 ./gradlew build
+
+# run every test and static-analysis check (detekt, SpotBugs, ESLint)
+./gradlew check
 
 # the IDE plugin distribution → packages/ide-plugin/build/distributions/*.zip
 ./gradlew :ide-plugin:buildPlugin
@@ -80,6 +83,7 @@ planned but not yet implemented.
 
 ## Documentation
 
+- [FEATURES.md](FEATURES.md) — the feature set and its status;
 - [AGENTS.md](AGENTS.md) — project description and contributor working rules
   (the [agents.md](https://agents.md/) format).
 

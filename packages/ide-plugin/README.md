@@ -1,7 +1,7 @@
 # reatom-ide-plugin
 
 An IDE plugin on the IntelliJ platform (Kotlin) — the native part of Reatom
-support for OpenIDE / IntelliJ IDEA. It implements **feature 9**:
+support for OpenIDE / IntelliJ IDEA. It implements **[feature 9](../../FEATURES.md)**:
 
 - **Code Lens** — a clickable summary line `atom · ↑N · ↓M · ⤴with*` above
   `atom` / `computed` / `action` / `effect` declarations
@@ -12,7 +12,7 @@ support for OpenIDE / IntelliJ IDEA. It implements **feature 9**:
 
 The data comes from the static reactive graph: the plugin runs the
 `@openide/reatom-ts-plugin` analyzer (feature 6) as a separate Node process
-and reads the JSON model (variant 2a of the hybrid architecture).
+and reads the JSON model.
 
 ## Architecture
 
@@ -36,8 +36,11 @@ root**:
 # IDE plugin tests (model + Code Lens / gutter rendering on BasePlatformTestCase)
 ./gradlew :ide-plugin:test
 
-# build and verify the whole repository — :ide-plugin and the :ts-plugin analyzer
+# build the whole repository — :ide-plugin and the :ts-plugin analyzer
 ./gradlew build
+
+# run every test and static-analysis check across both plugins
+./gradlew check
 ```
 
 `:ide-plugin:buildPlugin` builds the analyzer bundle from the `:ts-plugin`
@@ -48,7 +51,7 @@ subproject itself. The JDK 21 toolchain, the IntelliJ IDEA 2025.3 platform
 ## Sandbox
 
 `./scripts/start-sandbox.sh [path-to-project]` brings up an IDE sandbox with
-the plugin (by default it opens `../../../reatom-playground`);
+the plugin (by default it opens the in-repo demo, `examples/reatom-demo`);
 `./scripts/stop-sandbox.sh` stops it.
 
 Optionally the sandbox can bundle **MCP Steroid** for AI-driven IDE control

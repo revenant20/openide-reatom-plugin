@@ -25,3 +25,6 @@ Initial pre-release; early development.
 - **IDE plugin — navigation** "usage ↔ declaration", including across files.
 - The IDE plugin ships the analyzer bundled inside itself — a consumer project
   only needs a `@reatom/core` dependency, no extra npm package.
+- Developer tooling: static analysis wired into `./gradlew check` — detekt and
+  SpotBugs for the Kotlin IDE plugin, ESLint for the TypeScript analyzer — plus
+  the JetBrains Plugin Verifier (`verifyPlugin`).

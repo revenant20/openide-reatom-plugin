@@ -38,8 +38,11 @@
 Репозиторий — единый Gradle multi-project, сборка из корня:
 
 ```bash
-# собрать и проверить всё: анализатор, IDE-плагин, тесты
+# собрать анализатор и IDE-плагин
 ./gradlew build
+
+# прогнать все тесты и статический анализ (detekt, SpotBugs, ESLint)
+./gradlew check
 
 # дистрибутив IDE-плагина → packages/ide-plugin/build/distributions/*.zip
 ./gradlew :ide-plugin:buildPlugin
@@ -76,6 +79,7 @@ cd examples/reatom-demo && npm install
 
 ## Документация
 
+- [FEATURES.md](FEATURES.md) — состав фич и их статус;
 - [AGENTS.md](AGENTS.md) — описание проекта и правила работы для контрибьюторов
   (формат [agents.md](https://agents.md/)).
 
