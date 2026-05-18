@@ -11,12 +11,16 @@
     "build": "tsc -p tsconfig.json && npm run build:analyzer",
     "build:analyzer": "esbuild src/analyzer/cli.ts --bundle --platform=node --target=node18 --minify --legal-comments=eof --outfile=dist/analyzer/reatom-analyzer.cjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "eslint src test"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^25.8.0",
     "esbuild": "^0.25.0",
+    "eslint": "^10.4.0",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.3",
     "vitest": "^4.1.6"
   }
 }

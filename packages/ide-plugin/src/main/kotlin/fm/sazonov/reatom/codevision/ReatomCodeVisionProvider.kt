@@ -78,7 +78,10 @@ class ReatomCodeVisionProvider : CodeVisionProvider<Unit> {
                 onClick = { _, clickEditor ->
                     clickEditor.project?.let { clickProject ->
                         ReatomNavigation.showUsages(
-                            clickProject, clickEditor, nodeId, ReatomNavigation.UsageFilter.ALL,
+                            clickProject,
+                            clickEditor,
+                            nodeId,
+                            ReatomNavigation.UsageFilter.ALL,
                         )
                     }
                 },

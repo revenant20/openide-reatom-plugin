@@ -160,8 +160,11 @@ private class ReatomGutterIconRenderer(
 ) : GutterIconRenderer() {
 
     override fun getIcon(): Icon =
-        if (filter == UsageFilter.WRITE) AllIcons.Gutter.WriteAccess
-        else AllIcons.Gutter.ReadAccess
+        if (filter == UsageFilter.WRITE) {
+            AllIcons.Gutter.WriteAccess
+        } else {
+            AllIcons.Gutter.ReadAccess
+        }
 
     /** Declaration markers are aligned to the left edge of the gutter. */
     override fun getAlignment(): Alignment = Alignment.LEFT
@@ -177,8 +180,11 @@ private class ReatomGutterIconRenderer(
     /** The icon name for screen readers. */
     override fun getAccessibleName(): String =
         ReatomBundle.message(
-            if (filter == UsageFilter.WRITE) "gutter.accessibleName.write"
-            else "gutter.accessibleName.read",
+            if (filter == UsageFilter.WRITE) {
+                "gutter.accessibleName.write"
+            } else {
+                "gutter.accessibleName.read"
+            },
             node.kind,
             node.name,
         )
@@ -218,7 +224,9 @@ private class ReatomUsageGutterIconRenderer(
     override fun getTooltipText(): String =
         if (targets.size == 1) {
             ReatomBundle.message(
-                "gutter.usage.tooltip.single", targets[0].kind, targets[0].name,
+                "gutter.usage.tooltip.single",
+                targets[0].kind,
+                targets[0].name,
             )
         } else {
             ReatomBundle.message("gutter.usage.tooltip.many", targets.size)

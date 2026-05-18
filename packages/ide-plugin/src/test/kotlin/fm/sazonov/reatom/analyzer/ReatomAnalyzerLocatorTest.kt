@@ -78,7 +78,7 @@ class ReatomAnalyzerLocatorTest {
     fun usesReatomWalksUpToAParentPackageJson() {
         val root = temp.newFolder("monorepo")
         packageJson(root, """{ "dependencies": { "@reatom/core": "^1001.0.0" } }""")
-        val nested = File(root, "packages/feature/src").apply { mkdirs() }
+        val nested = File(root, "packages/feature/src").apply { check(mkdirs()) }
         assertTrue(ReatomAnalyzerLocator.usesReatom(nested))
     }
 
@@ -86,7 +86,7 @@ class ReatomAnalyzerLocatorTest {
     fun usesReatomDetectsAHoistedNodeModules() {
         val dir = temp.newFolder("project")
         packageJson(dir, """{ "dependencies": { "some-lib": "^1.0.0" } }""")
-        File(dir, "node_modules/@reatom/core").mkdirs()
+        check(File(dir, "node_modules/@reatom/core").mkdirs())
         assertTrue(ReatomAnalyzerLocator.usesReatom(dir))
     }
 
@@ -144,7 +144,7 @@ class ReatomAnalyzerLocatorTest {
     fun findUpwardsLocatesAFileInAParentDirectory() {
         val root = temp.newFolder("project")
         val tsconfig = File(root, "tsconfig.json").apply { writeText("{}") }
-        val nested = File(root, "src/feature").apply { mkdirs() }
+        val nested = File(root, "src/feature").apply { check(mkdirs()) }
         assertEquals(tsconfig, ReatomAnalyzerLocator.findUpwards(nested, "tsconfig.json"))
     }
 

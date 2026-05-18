@@ -34,5 +34,12 @@ val npmTest = tasks.register<NpmTask>("test") {
     args.set(listOf("run", "test", "--workspace", "@openide/reatom-ts-plugin"))
 }
 
+// Static analysis of the TypeScript sources (ESLint).
+// Configured in packages/ts-plugin/eslint.config.mjs.
+val npmLint = tasks.register<NpmTask>("lint") {
+    dependsOn("npmInstall")
+    args.set(listOf("run", "lint", "--workspace", "@openide/reatom-ts-plugin"))
+}
+
 tasks.register("build") { dependsOn(buildAnalyzer) }
-tasks.register("check") { dependsOn(npmTest) }
+tasks.register("check") { dependsOn(npmTest, npmLint) }

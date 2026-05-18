@@ -1,0 +1,43 @@
+# detekt configuration for the OpenIDE Reatom Plugin.
+#
+# build.gradle.kts sets `buildUponDefaultConfig = true`, so this file only has
+# to list deviations from detekt's bundled default rule set — everything not
+# mentioned here keeps its default behaviour. detekt runs with type resolution
+# (the detektMain / detektTest tasks).
+
+comments:
+  # Every .kt file must start with the Apache-2.0 header. The expected text is
+  # config/detekt/license.template (resolved next to this config file).
+  AbsentOrWrongFileLicense:
+    active: true
+    licenseTemplateFile: 'license.template'
+
+style:
+  # Guard clauses (early `return` on invalid input) keep the analyzer/locator
+  # code flat and readable, so they are not counted towards the limit.
+  ReturnCount:
+    max: 4
+    excludeGuardClauses: true
+  # Gutter/Code Vision scanning loops legitimately use a couple of
+  # `continue`/`break` jumps to skip irrelevant PSI nodes.
+  LoopWithTooManyJumpStatements:
+    maxJumpCount: 3
+  # The plugin runs inside the IDE: printing to stdout is invisible to users
+  # (thisLogger() is the channel), and blocking a thread can freeze the UI.
+  # This rule needs type resolution, which detektMain / detektTest provide.
+  ForbiddenMethodCall:
+    active: true
+    methods:
+      - reason: 'use thisLogger() — stdout is invisible inside the IDE'
+        value: 'kotlin.io.print'
+      - reason: 'use thisLogger() — stdout is invisible inside the IDE'
+        value: 'kotlin.io.println'
+      - reason: 'blocking a thread can freeze the IDE; use a background task or coroutine delay'
+        value: 'java.lang.Thread.sleep'
+
+exceptions:
+  # The IDE plugin must degrade gracefully and never crash the host IDE, so a
+  # broad `catch (e: Exception)` around external process calls, file IO and
+  # JSON parsing is intentional — every such site logs the cause.
+  TooGenericExceptionCaught:
+    active: false

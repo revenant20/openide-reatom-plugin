@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotBugs exclude filter for the OpenIDE Reatom Plugin.
+
+  Every entry below is a pattern that SpotBugs actually reports on this codebase
+  and that we deliberately keep from failing the build. The reason differs per
+  pattern, so each one is documented. Anything not listed here still fails
+  `check`.
+-->
+<FindBugsFilter>
+    <!--
+      BC_BAD_CAST_TO_ABSTRACT_COLLECTION (16x) — a genuine Kotlin-compiler
+      artefact. The compiler synthesises Collection->List/Set casts for stdlib
+      operators (map/filter/groupBy), for generated data-class equals/hashCode
+      and for destructuring. The reported line numbers point at class/decl
+      lines, which confirms the casts are not in our source — there is nothing
+      to fix, so the pattern is suppressed wholesale. The same exclusion is used
+      by other Kotlin projects (jitsi-utils, jicofo) for the same reason.
+    -->
+    <Match>
+        <Bug pattern="BC_BAD_CAST_TO_ABSTRACT_COLLECTION"/>
+    </Match>
+
+    <!--
+      EI_EXPOSE_REP / EI_EXPOSE_REP2 (10x) — these are REAL findings, not false
+      positives. A Kotlin `val x: List<T>` erases to java.util.List on the JVM,
+      and ReatomGraph / ReatomGraphNode are Gson-deserialized — Gson builds
+      ArrayList, so the lists genuinely are mutable at runtime. The findings sit
+      in the MALICIOUS_CODE category (defence against hostile callers). We
+      accept them because both classes are internal model types, built once
+      from the analyzer's JSON output and only ever read afterwards, and the
+      plugin has no untrusted-code threat model. This is an accepted trade-off,
+      not a tool error.
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+</FindBugsFilter>

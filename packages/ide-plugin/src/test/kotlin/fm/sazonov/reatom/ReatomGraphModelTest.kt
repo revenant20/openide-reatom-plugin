@@ -16,14 +16,14 @@
 
 package fm.sazonov.reatom
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
 import fm.sazonov.reatom.model.GraphRange
 import fm.sazonov.reatom.model.ReatomGraph
 import fm.sazonov.reatom.model.ReatomGraphEdge
 import fm.sazonov.reatom.model.ReatomGraphModel
 import fm.sazonov.reatom.model.ReatomGraphNode
 import fm.sazonov.reatom.model.ReatomNodeSummary
+import org.junit.Assert.assertEquals
+import org.junit.Test
 
 /** Unit tests of the pure operations on the graph model — without the platform. */
 class ReatomGraphModelTest {

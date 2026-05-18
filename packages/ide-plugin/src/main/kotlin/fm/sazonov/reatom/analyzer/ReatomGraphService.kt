@@ -87,10 +87,12 @@ class ReatomGraphService(private val project: Project) : Disposable {
      * documents to disk (the analyzer reads files from disk) and launches Node.
      */
     fun scheduleReload() {
-        reloadQueue.queue(Update.create(RELOAD_TASK) {
-            FileDocumentManager.getInstance().saveAllDocuments()
-            reloadAsync()
-        })
+            reloadQueue.queue(
+            Update.create(RELOAD_TASK) {
+                FileDocumentManager.getInstance().saveAllDocuments()
+                reloadAsync()
+            }
+        )
     }
 
     /**
@@ -101,9 +103,11 @@ class ReatomGraphService(private val project: Project) : Disposable {
      * that — `shiftGraph` has already corrected the offsets in memory).
      */
     fun scheduleGutterRefresh() {
-        gutterQueue.queue(Update.create(GUTTER_TASK) {
-            ReatomGraphRefresher.refreshGutters(project)
-        })
+        gutterQueue.queue(
+            Update.create(GUTTER_TASK) {
+                ReatomGraphRefresher.refreshGutters(project)
+            }
+        )
     }
 
     /**

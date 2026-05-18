@@ -131,12 +131,16 @@ object ReatomAnalyzerLocator {
                     thisLogger().warn("Reatom: analyzer bundle not found in the plugin")
                     return null
                 }
-            target.parentFile.mkdirs()
-            val tmp = File.createTempFile("analyzer-", ".cjs", target.parentFile)
+            val directory = target.parentFile
+            if (!directory.isDirectory && !directory.mkdirs()) {
+                thisLogger().warn("Reatom: cannot create the analyzer cache directory $directory")
+                return null
+            }
+            val tmp = File.createTempFile("analyzer-", ".cjs", directory)
             resource.use { input -> tmp.outputStream().use(input::copyTo) }
             if (!tmp.renameTo(target)) {
                 tmp.copyTo(target, overwrite = true)
-                tmp.delete()
+                if (!tmp.delete()) tmp.deleteOnExit()
             }
             target
         } catch (e: Exception) {

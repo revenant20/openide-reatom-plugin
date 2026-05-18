@@ -97,13 +97,18 @@ class ReatomCodeVisionTest : BasePlatformTestCase() {
                 schemaVersion = 1,
                 nodes = listOf(
                     ReatomGraphNode(
-                        id = id, kind = "atom", name = "counter", file = path,
+                        id = id,
+                        kind = "atom",
+                        name = "counter",
+                        file = path,
                         range = GraphRange(declStart, declStart + "counter".length),
                     ),
                 ),
                 edges = listOf(
                     ReatomGraphEdge(
-                        to = id, kind = "read", file = path,
+                        to = id,
+                        kind = "read",
+                        file = path,
                         range = GraphRange(useStart, useStart + "counter".length),
                     ),
                 ),
