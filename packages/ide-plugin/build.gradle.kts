@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "2.1.20"
@@ -49,6 +51,18 @@ intellijPlatform {
             sinceBuild = "253"
             // IntelliJ IDEA 2025.3 through 2026.3.
             untilBuild = "263.*"
+        }
+    }
+
+    // `verifyPlugin` runs the JetBrains Plugin Verifier — it checks the built
+    // plugin for API/binary compatibility against real IDE builds, the same
+    // check the Marketplace performs. Verified at both ends of the supported
+    // range. Since 2025.3 IntelliJ IDEA ships as a single unified distribution
+    // (`IntellijIdea`) — Community/Ultimate are no longer published separately.
+    pluginVerification {
+        ides {
+            create(IntelliJPlatformType.IntellijIdea, "2025.3")
+            create(IntelliJPlatformType.IntellijIdea, "2026.1")
         }
     }
 }
