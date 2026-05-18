@@ -87,7 +87,7 @@ class ReatomGraphService(private val project: Project) : Disposable {
      * documents to disk (the analyzer reads files from disk) and launches Node.
      */
     fun scheduleReload() {
-            reloadQueue.queue(
+        reloadQueue.queue(
             Update.create(RELOAD_TASK) {
                 FileDocumentManager.getInstance().saveAllDocuments()
                 reloadAsync()
