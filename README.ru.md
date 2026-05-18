@@ -71,14 +71,11 @@ cd examples/reatom-demo && npm install
 - **анализатор реактивного графа** (`ts-plugin`);
 - **нативные Code Lens, gutter-иконки и навигация** (`ide-plugin`).
 
-Полная концепция и ещё не реализованные фичи (диагностики, quick-fixes,
-completion-сниппеты, toolwindow с графом и др.) — в
-[docs/features-reatom-plugin.md](docs/features-reatom-plugin.md).
+Диагностики, quick-fixes, completion-сниппеты, toolwindow с графом и другие
+фичи запланированы, но ещё не реализованы.
 
 ## Документация
 
-- [docs/features-reatom-plugin.md](docs/features-reatom-plugin.md) — концепция,
-  архитектура и состав фичей;
 - [AGENTS.md](AGENTS.md) — описание проекта и правила работы для контрибьюторов
   (формат [agents.md](https://agents.md/)).
 

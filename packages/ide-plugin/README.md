@@ -1,8 +1,7 @@
 # reatom-ide-plugin
 
 An IDE plugin on the IntelliJ platform (Kotlin) — the native part of Reatom
-support for OpenIDE / IntelliJ IDEA. It implements **feature 9** from the
-[concept](../../docs/features-reatom-plugin.md):
+support for OpenIDE / IntelliJ IDEA. It implements **feature 9**:
 
 - **Code Lens** — a clickable summary line `atom · ↑N · ↓M · ⤴with*` above
   `atom` / `computed` / `action` / `effect` declarations

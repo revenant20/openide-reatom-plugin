@@ -6,9 +6,6 @@ walks a project with the TypeScript Compiler API and builds a model: `atom` /
 On top of this model sit the Code Lens, gutter icons, and navigation of
 `reatom-ide-plugin`.
 
-The full concept — [docs/features-reatom-plugin.md](../../docs/features-reatom-plugin.md);
-the analyzer design — [docs/feature-6-analyzer.md](../../docs/feature-6-analyzer.md).
-
 ## Contents
 
 - `src/analyzer/` — the analyzer: `cli.ts` (a one-shot CLI) and `graph.ts`

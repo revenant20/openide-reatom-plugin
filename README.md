@@ -75,14 +75,11 @@ Early development. Implemented:
 - the **reactive graph analyzer** (`ts-plugin`);
 - **native Code Lens, gutter icons and navigation** (`ide-plugin`).
 
-The full concept and the not-yet-implemented features (diagnostics, quick-fixes,
-completion snippets, a graph toolwindow, and more) are described in
-[docs/features-reatom-plugin.md](docs/features-reatom-plugin.md).
+Diagnostics, quick-fixes, completion snippets, a graph toolwindow and more are
+planned but not yet implemented.
 
 ## Documentation
 
-- [docs/features-reatom-plugin.md](docs/features-reatom-plugin.md) — the
-  concept, architecture and feature set;
 - [AGENTS.md](AGENTS.md) — project description and contributor working rules
   (the [agents.md](https://agents.md/) format).
 
