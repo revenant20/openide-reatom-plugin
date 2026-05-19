@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>fm.sazonov.reatom</id>
-    <name>Reatom Support</name>
+    <name>Reatom for OpenIDE</name>
     <vendor url="https://openide.ru">OpenIDE</vendor>
 
     <description><![CDATA[
