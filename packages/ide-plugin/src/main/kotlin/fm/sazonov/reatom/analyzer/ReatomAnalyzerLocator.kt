@@ -18,14 +18,13 @@ package fm.sazonov.reatom.analyzer
 
 import com.google.gson.JsonParser
 import com.intellij.execution.configurations.PathEnvironmentVariableUtil
-import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.diagnostic.thisLogger
-import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import org.jetbrains.annotations.VisibleForTesting
 import java.io.File
+import java.security.MessageDigest
 
 /** Resolved paths needed to run the reactive graph analyzer. */
 data class AnalyzerLocations(
@@ -51,10 +50,14 @@ object ReatomAnalyzerLocator {
 
     private const val REATOM_PACKAGE = "@reatom/core"
 
-    private const val PLUGIN_ID = "fm.sazonov.reatom"
-
     /** Path of the analyzer bundle inside the plugin jar (see build.gradle.kts). */
     private const val BUNDLE_RESOURCE = "analyzer/reatom-analyzer.cjs"
+
+    /** Bytes of the SHA-256 digest kept for the cache file name (16 hex chars). */
+    private const val HASH_PREFIX_BYTES = 8
+
+    /** Mask reading a [Byte] as an unsigned 0–255 value. */
+    private const val BYTE_MASK = 0xff
 
     private val DEPENDENCY_SECTIONS = listOf(
         "dependencies",
@@ -110,48 +113,75 @@ object ReatomAnalyzerLocator {
         }
 
     /**
-     * Extracts the analyzer bundle from the plugin resources into the IDE
-     * system directory (once per plugin version) and returns its path.
+     * Extracts the self-contained analyzer bundle the IDE plugin carries inside
+     * itself into the IDE system directory and returns its path. The cache file
+     * is named by a content hash, so a new plugin build with a changed analyzer
+     * is picked up automatically — even when the plugin version is unchanged.
      */
     private fun bundledAnalyzer(): File? {
-        val version = PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "dev"
-        val target = File(PathManager.getSystemPath(), "reatom-analyzer/analyzer-$version.cjs")
-        return extractBundle(BUNDLE_RESOURCE, target)
+        val bundle = ReatomAnalyzerLocator::class.java.classLoader
+            .getResourceAsStream(BUNDLE_RESOURCE)
+            ?.use { it.readBytes() }
+            ?: run {
+                thisLogger().warn("Reatom: analyzer bundle not found in the plugin")
+                return null
+            }
+        return extractBundle(bundle, File(PathManager.getSystemPath(), "reatom-analyzer"))
     }
 
     /**
-     * Extracts the classpath resource [resourceName] into [target] via an
-     * atomic temp-file rename. Idempotent: an existing non-empty [target] is
-     * reused as is. Returns [target], or null if the resource is absent or
-     * extraction fails.
+     * Writes [bundle] into [directory] under a content-hashed file name and
+     * returns it: a changed bundle yields a new path, so a stale cache is never
+     * reused. A file already extracted from the same bytes is reused as is, and
+     * superseded bundles (old version-named or stale-hash files) are removed.
+     * Returns null if extraction fails.
      */
     @VisibleForTesting
-    internal fun extractBundle(resourceName: String, target: File): File? {
-        if (target.isFile && target.length() > 0L) return target
+    internal fun extractBundle(bundle: ByteArray, directory: File): File? {
+        val target = File(directory, "analyzer-${contentHash(bundle)}.cjs")
+        val upToDate = target.isFile && target.length() == bundle.size.toLong()
+        if (!upToDate && !writeBundle(bundle, target)) return null
+        removeSupersededBundles(directory, keep = target)
+        return target
+    }
+
+    /** Writes [bundle] to [target] via an atomic temp-file rename. */
+    private fun writeBundle(bundle: ByteArray, target: File): Boolean {
+        val directory = target.parentFile
+        if (!directory.isDirectory && !directory.mkdirs()) {
+            thisLogger().warn("Reatom: cannot create the analyzer cache directory $directory")
+            return false
+        }
         return try {
-            val resource = ReatomAnalyzerLocator::class.java.classLoader
-                .getResourceAsStream(resourceName)
-                ?: run {
-                    thisLogger().warn("Reatom: analyzer bundle not found in the plugin")
-                    return null
-                }
-            val directory = target.parentFile
-            if (!directory.isDirectory && !directory.mkdirs()) {
-                thisLogger().warn("Reatom: cannot create the analyzer cache directory $directory")
-                return null
-            }
-            val tmp = File.createTempFile("analyzer-", ".cjs", directory)
-            resource.use { input -> tmp.outputStream().use(input::copyTo) }
+            val tmp = File.createTempFile(".analyzer-", ".cjs.tmp", directory)
+            tmp.writeBytes(bundle)
             if (!tmp.renameTo(target)) {
                 tmp.copyTo(target, overwrite = true)
                 if (!tmp.delete()) tmp.deleteOnExit()
             }
-            target
+            true
         } catch (e: Exception) {
             thisLogger().warn("Reatom: failed to extract the analyzer bundle", e)
-            null
+            false
         }
     }
+
+    /** Deletes previously extracted analyzer bundles other than [keep]. */
+    private fun removeSupersededBundles(directory: File, keep: File) {
+        directory.listFiles { file ->
+            file.isFile &&
+                file.name.startsWith("analyzer-") &&
+                file.name.endsWith(".cjs") &&
+                file != keep
+        }?.forEach { if (!it.delete()) it.deleteOnExit() }
+    }
+
+    /** Short, stable content hash for naming the analyzer cache file. */
+    private fun contentHash(bundle: ByteArray): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(bundle)
+            .take(HASH_PREFIX_BYTES)
+            .joinToString("") { "%02x".format(it.toInt() and BYTE_MASK) }
 
     private fun findNode(): File? {
         PathEnvironmentVariableUtil.findInPath("node")?.let { return it }

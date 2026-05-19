@@ -19,6 +19,7 @@ package fm.sazonov.reatom.analyzer
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -100,35 +101,49 @@ class ReatomAnalyzerLocatorTest {
     // --- extractBundle --------------------------------------------------------
 
     @Test
-    fun extractBundleWritesTheResourceToTheTarget() {
-        val target = File(temp.newFolder("out"), "analyzer.cjs")
-        val result = ReatomAnalyzerLocator.extractBundle(TEST_BUNDLE_RESOURCE, target)
+    fun extractBundleWritesAContentHashedFile() {
+        val dir = temp.newFolder("cache")
+        val bundle = "analyzer-bundle-bytes".toByteArray()
 
-        assertEquals(target, result)
-        assertTrue(target.isFile)
-        val expected = javaClass.classLoader
-            .getResourceAsStream(TEST_BUNDLE_RESOURCE)!!
-            .use { it.readBytes() }
-        assertArrayEquals(expected, target.readBytes())
+        val result = ReatomAnalyzerLocator.extractBundle(bundle, dir)!!
+
+        assertEquals(dir, result.parentFile)
+        assertTrue(result.name.matches(Regex("analyzer-[0-9a-f]+\\.cjs")))
+        assertArrayEquals(bundle, result.readBytes())
     }
 
     @Test
-    fun extractBundleReusesAnExistingTarget() {
-        val target = File(temp.newFolder("out"), "analyzer.cjs")
-        target.writeText("already extracted")
+    fun extractBundleReusesAnAlreadyExtractedFile() {
+        val dir = temp.newFolder("cache")
+        val bundle = "twelve-bytes".toByteArray()
+        val target = ReatomAnalyzerLocator.extractBundle(bundle, dir)!!
+        // Same length, different content: a reuse keeps it, a rewrite replaces it.
+        target.writeBytes("XXXXXXXXXXXX".toByteArray())
 
-        val result = ReatomAnalyzerLocator.extractBundle(TEST_BUNDLE_RESOURCE, target)
+        val again = ReatomAnalyzerLocator.extractBundle(bundle, dir)!!
 
-        assertEquals(target, result)
-        // An existing non-empty file is reused, not overwritten.
-        assertEquals("already extracted", target.readText())
+        assertEquals(target, again)
+        assertEquals("XXXXXXXXXXXX", again.readText())
     }
 
     @Test
-    fun extractBundleReturnsNullForAMissingResource() {
-        val target = File(temp.newFolder("out"), "analyzer.cjs")
-        assertNull(ReatomAnalyzerLocator.extractBundle("analyzer/no-such-bundle.cjs", target))
-        assertFalse(target.exists())
+    fun extractBundleNamesDifferentContentDifferently() {
+        val dir = temp.newFolder("cache")
+        val a = ReatomAnalyzerLocator.extractBundle("bundle-a".toByteArray(), dir)!!
+        val b = ReatomAnalyzerLocator.extractBundle("bundle-b".toByteArray(), dir)!!
+        assertNotEquals(a.name, b.name)
+    }
+
+    @Test
+    fun extractBundleRemovesSupersededBundles() {
+        val dir = temp.newFolder("cache")
+        // A stale cache file from the earlier version-named scheme.
+        val stale = File(dir, "analyzer-0.0.1.cjs").apply { writeText("stale") }
+
+        val current = ReatomAnalyzerLocator.extractBundle("fresh".toByteArray(), dir)!!
+
+        assertTrue(current.isFile)
+        assertFalse(stale.exists())
     }
 
     // --- findProjectConfig ----------------------------------------------------
@@ -186,9 +201,5 @@ class ReatomAnalyzerLocatorTest {
         val nestedConfig = File(nested, "jsconfig.json").apply { writeText("{}") }
         // The nested jsconfig.json beats the root tsconfig.json.
         assertEquals(nestedConfig, ReatomAnalyzerLocator.findProjectConfig(nested))
-    }
-
-    private companion object {
-        const val TEST_BUNDLE_RESOURCE = "reatom-analyzer-test-bundle.cjs"
     }
 }
