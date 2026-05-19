@@ -40,8 +40,9 @@ data class AnalyzerLocations(
  * It first checks that the project **actually uses Reatom** (depends on
  * `@reatom/core`). Then it extracts the **self-contained analyzer bundle** that
  * the IDE plugin carries inside itself (our code plus TypeScript within a single
- * `.cjs`) and looks for `node` and `tsconfig.json`. The consumer does NOT need
- * the `@openide/reatom-ts-plugin` npm package — the IDE plugin is self-contained.
+ * `.cjs`) and looks for `node` and a `tsconfig.json` / `jsconfig.json`. The
+ * consumer does NOT need the `@openide/reatom-ts-plugin` npm package — the IDE
+ * plugin is self-contained.
  *
  * The lookup is best-effort: if something is missing, the analyzer simply does
  * not run.
@@ -67,12 +68,15 @@ object ReatomAnalyzerLocator {
         "/usr/bin/node",
     )
 
+    /** Project-config file names tried, in priority order, at each directory level. */
+    private val CONFIG_FILE_NAMES = listOf("tsconfig.json", "jsconfig.json")
+
     fun locate(project: Project): AnalyzerLocations? {
         val base = project.guessProjectDir()?.let { File(it.path) } ?: return null
         if (!usesReatom(base)) return null
         val node = findNode() ?: return null
         val analyzer = bundledAnalyzer() ?: return null
-        val tsconfig = findUpwards(base, "tsconfig.json") ?: return null
+        val tsconfig = findProjectConfig(base) ?: return null
         return AnalyzerLocations(node, analyzer, tsconfig)
     }
 
@@ -154,13 +158,27 @@ object ReatomAnalyzerLocator {
         return NODE_FALLBACKS.map(::File).firstOrNull { it.canExecute() }
     }
 
-    /** Looks for `relative` in `start` and up the directory tree. */
+    /**
+     * Looks for a TypeScript/JavaScript project config in [start] and up the
+     * directory tree. At each level it prefers `tsconfig.json`, then
+     * `jsconfig.json`, then — as a fallback for solution-style layouts that lack
+     * a root `tsconfig.json` — the alphabetically first `tsconfig*.json`. The
+     * closest config wins: a child's `jsconfig.json` beats a parent's
+     * `tsconfig.json`.
+     */
     @VisibleForTesting
-    internal fun findUpwards(start: File, relative: String): File? {
+    internal fun findProjectConfig(start: File): File? {
         var directory: File? = start
         while (directory != null) {
-            val candidate = File(directory, relative)
-            if (candidate.isFile) return candidate
+            for (name in CONFIG_FILE_NAMES) {
+                val candidate = File(directory, name)
+                if (candidate.isFile) return candidate
+            }
+            directory.listFiles { file ->
+                file.isFile &&
+                    file.name.startsWith("tsconfig") &&
+                    file.name.endsWith(".json")
+            }?.minByOrNull { it.name }?.let { return it }
             directory = directory.parentFile
         }
         return null

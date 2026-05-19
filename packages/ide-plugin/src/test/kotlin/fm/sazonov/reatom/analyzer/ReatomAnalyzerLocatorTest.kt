@@ -131,27 +131,61 @@ class ReatomAnalyzerLocatorTest {
         assertFalse(target.exists())
     }
 
-    // --- findUpwards ----------------------------------------------------------
+    // --- findProjectConfig ----------------------------------------------------
 
     @Test
-    fun findUpwardsLocatesAFileInTheStartDirectory() {
+    fun findProjectConfigLocatesTsconfigInTheStartDirectory() {
         val dir = temp.newFolder("project")
         val tsconfig = File(dir, "tsconfig.json").apply { writeText("{}") }
-        assertEquals(tsconfig, ReatomAnalyzerLocator.findUpwards(dir, "tsconfig.json"))
+        assertEquals(tsconfig, ReatomAnalyzerLocator.findProjectConfig(dir))
     }
 
     @Test
-    fun findUpwardsLocatesAFileInAParentDirectory() {
+    fun findProjectConfigLocatesTsconfigInAParentDirectory() {
         val root = temp.newFolder("project")
         val tsconfig = File(root, "tsconfig.json").apply { writeText("{}") }
         val nested = File(root, "src/feature").apply { check(mkdirs()) }
-        assertEquals(tsconfig, ReatomAnalyzerLocator.findUpwards(nested, "tsconfig.json"))
+        assertEquals(tsconfig, ReatomAnalyzerLocator.findProjectConfig(nested))
     }
 
     @Test
-    fun findUpwardsReturnsNullWhenTheFileIsAbsent() {
+    fun findProjectConfigReturnsNullWhenNoConfigExists() {
         val dir = temp.newFolder("project")
-        assertNull(ReatomAnalyzerLocator.findUpwards(dir, "tsconfig.json"))
+        assertNull(ReatomAnalyzerLocator.findProjectConfig(dir))
+    }
+
+    @Test
+    fun findProjectConfigFallsBackToJsconfig() {
+        val dir = temp.newFolder("project")
+        val jsconfig = File(dir, "jsconfig.json").apply { writeText("{}") }
+        assertEquals(jsconfig, ReatomAnalyzerLocator.findProjectConfig(dir))
+    }
+
+    @Test
+    fun findProjectConfigPrefersTsconfigOverJsconfig() {
+        val dir = temp.newFolder("project")
+        val tsconfig = File(dir, "tsconfig.json").apply { writeText("{}") }
+        File(dir, "jsconfig.json").writeText("{}")
+        assertEquals(tsconfig, ReatomAnalyzerLocator.findProjectConfig(dir))
+    }
+
+    @Test
+    fun findProjectConfigFallsBackToANamedTsconfigVariant() {
+        val dir = temp.newFolder("project")
+        File(dir, "tsconfig.base.json").writeText("{}")
+        val appConfig = File(dir, "tsconfig.app.json").apply { writeText("{}") }
+        // No tsconfig.json / jsconfig.json — the alphabetically first variant wins.
+        assertEquals(appConfig, ReatomAnalyzerLocator.findProjectConfig(dir))
+    }
+
+    @Test
+    fun findProjectConfigPrefersTheClosestConfig() {
+        val root = temp.newFolder("project")
+        File(root, "tsconfig.json").writeText("{}")
+        val nested = File(root, "packages/app").apply { check(mkdirs()) }
+        val nestedConfig = File(nested, "jsconfig.json").apply { writeText("{}") }
+        // The nested jsconfig.json beats the root tsconfig.json.
+        assertEquals(nestedConfig, ReatomAnalyzerLocator.findProjectConfig(nested))
     }
 
     private companion object {

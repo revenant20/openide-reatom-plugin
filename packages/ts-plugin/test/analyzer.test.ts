@@ -143,3 +143,133 @@ describe('analyzer CLI', () => {
     expect(graph.edges.some((e) => e.kind === 'read')).toBe(true);
   });
 });
+
+describe('analyzer CLI — solution-style tsconfig', () => {
+  let projectDir: string;
+
+  const cliPath = (): string =>
+    path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '..',
+      'dist',
+      'analyzer',
+      'cli.js',
+    );
+
+  beforeAll(() => {
+    projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'reatom-solution-'));
+    const write = (relative: string, content: string): void => {
+      const full = path.join(projectDir, relative);
+      fs.mkdirSync(path.dirname(full), { recursive: true });
+      fs.writeFileSync(full, content);
+    };
+    write(
+      'node_modules/@reatom/core/package.json',
+      JSON.stringify({ name: '@reatom/core', version: '1001.0.0', types: 'index.d.ts' }),
+    );
+    write('node_modules/@reatom/core/index.d.ts', REATOM_CORE_DTS);
+    // A solution-style root: no files of its own, only references to leaf
+    // projects (the layout `tsc --init` and Vite scaffolds produce).
+    write(
+      'tsconfig.json',
+      JSON.stringify({ files: [], references: [{ path: './tsconfig.app.json' }] }),
+    );
+    write(
+      'tsconfig.app.json',
+      JSON.stringify({
+        compilerOptions: { composite: true, strict: true, skipLibCheck: true },
+        include: ['src'],
+      }),
+    );
+    write(
+      'src/model.ts',
+      `import { atom } from '@reatom/core';\n` +
+        `export const counter = atom(0, 'counter');\n` +
+        `export const read = () => counter();`,
+    );
+  });
+
+  afterAll(() => {
+    fs.rmSync(projectDir, { recursive: true, force: true });
+  });
+
+  it('expands project references instead of returning an empty graph', () => {
+    const output = execFileSync(
+      process.execPath,
+      [cliPath(), '--project', path.join(projectDir, 'tsconfig.json')],
+      { encoding: 'utf8' },
+    );
+    const graph = JSON.parse(output) as {
+      nodes: Array<{ name: string; kind: string }>;
+      edges: Array<{ kind: string }>;
+    };
+    expect(graph.nodes.some((n) => n.name === 'counter' && n.kind === 'atom')).toBe(true);
+    expect(graph.edges.some((e) => e.kind === 'read')).toBe(true);
+  });
+});
+
+describe('analyzer CLI — resilient to broken references', () => {
+  let projectDir: string;
+
+  const cliPath = (): string =>
+    path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '..',
+      'dist',
+      'analyzer',
+      'cli.js',
+    );
+
+  beforeAll(() => {
+    projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'reatom-broken-ref-'));
+    const write = (relative: string, content: string): void => {
+      const full = path.join(projectDir, relative);
+      fs.mkdirSync(path.dirname(full), { recursive: true });
+      fs.writeFileSync(full, content);
+    };
+    write(
+      'node_modules/@reatom/core/package.json',
+      JSON.stringify({ name: '@reatom/core', version: '1001.0.0', types: 'index.d.ts' }),
+    );
+    write('node_modules/@reatom/core/index.d.ts', REATOM_CORE_DTS);
+    // The root references three leaves: one good, one malformed, one missing.
+    write(
+      'tsconfig.json',
+      JSON.stringify({
+        files: [],
+        references: [
+          { path: './tsconfig.good.json' },
+          { path: './tsconfig.broken.json' },
+          { path: './tsconfig.absent.json' },
+        ],
+      }),
+    );
+    write(
+      'tsconfig.good.json',
+      JSON.stringify({
+        compilerOptions: { composite: true, strict: true, skipLibCheck: true },
+        include: ['src'],
+      }),
+    );
+    write('tsconfig.broken.json', '{ this is not valid json');
+    write(
+      'src/model.ts',
+      `import { atom } from '@reatom/core';\n` +
+        `export const counter = atom(0, 'counter');`,
+    );
+  });
+
+  afterAll(() => {
+    fs.rmSync(projectDir, { recursive: true, force: true });
+  });
+
+  it('skips unreadable references and still analyzes the good ones', () => {
+    const output = execFileSync(
+      process.execPath,
+      [cliPath(), '--project', path.join(projectDir, 'tsconfig.json')],
+      { encoding: 'utf8' },
+    );
+    const graph = JSON.parse(output) as { nodes: Array<{ name: string }> };
+    expect(graph.nodes.some((n) => n.name === 'counter')).toBe(true);
+  });
+});
