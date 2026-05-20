@@ -122,6 +122,87 @@ usages from `com.intellij.codeInsight.codeVision.CodeVisionProvider` — the Cod
 Vision API is marked `@Experimental` by the platform and has no stable
 alternative; `verifyPlugin` will flag it if a future IDE changes that API.
 
+## Local workflow
+
+The development loop, top to bottom:
+
+1. **Pick a task.** Features and their status live in
+   [FEATURES.md](FEATURES.md). The package boundary is fixed by
+   [Separation of responsibilities](#separation-of-responsibilities) — anything
+   doable in `ts-plugin` lives there; the IDE plugin is only for what LSP
+   cannot deliver.
+
+2. **Write the code** in the right package — TypeScript under
+   `packages/ts-plugin/src/`, Kotlin under
+   `packages/ide-plugin/src/main/kotlin/fm/sazonov/reatom/`.
+
+3. **Write tests next to the change.** vitest for the analyzer
+   (`packages/ts-plugin/test/`, `npm test`); JUnit plus the IntelliJ test
+   framework for the IDE plugin (`packages/ide-plugin/src/test/kotlin/`,
+   `./gradlew :ide-plugin:test`).
+
+4. **Keep `./gradlew check` green.** It runs detekt + SpotBugs + IDE-plugin
+   tests and, via `:ts-plugin:check`, vitest + ESLint. Fix findings or justify
+   a config deviation with a comment in the relevant config file.
+
+5. **Run the sandbox** to exercise the change against a real project:
+
+   ```bash
+   packages/ide-plugin/scripts/start-sandbox.sh [project-path]   # default: examples/reatom-demo
+   packages/ide-plugin/scripts/stop-sandbox.sh
+   ```
+
+   The script launches `runIde --args=<project>` detached — **not** raw
+   `./gradlew :ide-plugin:runIde`, which lands on the Welcome screen with
+   nothing open. The gradle pid is written to
+   `packages/ide-plugin/build/.sandbox-ide.pid`, the gradle output to
+   `build/sandbox-gradle.log`, the IDE itself logs to
+   `build/idea-sandbox/IU-*/log/idea.log`.
+
+6. **Verify live via MCP.** Set the `mcpSteroidDir` Gradle property (e.g. in
+   `~/.gradle/gradle.properties`) to a directory holding the
+   `mcp-steroid-*.zip` distribution; the sandbox then ships
+   [MCP Steroid](https://github.com/jonnyzzz/mcp-steroid). Once a Reatom
+   project is open in the sandbox, the snippet below (a `steroid_execute_code`
+   payload) returns the node and edge counts of the live reactive graph — the
+   definitive "the plugin works" check:
+
+   ```kotlin
+   val plugin = PluginManagerCore.getPlugin(PluginId.getId("fm.sazonov.reatom"))!!
+   val cl = plugin.classLoader
+   val serviceClass = cl.loadClass("fm.sazonov.reatom.analyzer.ReatomGraphService")
+   val service = project.getService(serviceClass)!!
+   val graph = serviceClass.getMethod("getGraph").invoke(service)
+     ?: error("graph not built yet")
+   val nodes = graph.javaClass.getMethod("getNodes").invoke(graph) as List<*>
+   val edges = graph.javaClass.getMethod("getEdges").invoke(graph) as List<*>
+   println("nodes=${nodes.size} edges=${edges.size}")
+   ```
+
+   Without MCP the same check is opening a Reatom project in the sandbox and
+   looking at Code Lens and gutter icons.
+
+7. **Commit** in English, past tense, no `Co-Authored-By` trailer.
+
+### Reference — handy commands and paths
+
+| Goal | Command |
+|---|---|
+| Full gate (both plugins) | `./gradlew check` |
+| IDE plugin only — compile, detekt, SpotBugs, tests | `./gradlew :ide-plugin:check` |
+| Analyzer (ts-plugin) only — build, vitest, ESLint | `cd packages/ts-plugin && npm run build && npm test && npm run lint` |
+| Build the distributable plugin zip | `./gradlew :ide-plugin:buildPlugin` → `packages/ide-plugin/build/distributions/ide-plugin-0.0.1.zip` |
+| Plugin compatibility against real IDE builds (release-time, slow) | `./gradlew :ide-plugin:verifyPlugin` |
+
+To install the freshly built plugin in OpenIDE / OpenIDE Pro:
+`Settings → Plugins → ⚙ → Install Plugin from Disk →` the zip above. The
+extracted analyzer bundle cache lives at
+`<IDE system path>/reatom-analyzer/analyzer-<hash>.cjs` (on macOS, e.g.
+`~/Library/Caches/OpenIDE/OpenIDE-Pro2025.3/reatom-analyzer/`). The file is
+named by the bundle's content hash, so a plugin update with a changed analyzer
+is picked up automatically — superseded files are cleaned up on the next run,
+manual cache invalidation is not needed.
+
 ## Working rules
 
 - The project language — documentation, code comments, and commits — is **English**.
